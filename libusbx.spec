@@ -6,7 +6,7 @@
 Summary:        Library for accessing USB devices
 Name:           libusbx
 Version:        1.0.12
-Release:        1
+Release:        2
 Source0:        http://downloads.sourceforge.net/libusbx/libusbx-%{version}.tar.bz2
 License:        LGPLv2+
 Group:          System/Libraries
@@ -44,6 +44,7 @@ Group:          Development/C
 Requires:       %{name}-devel-doc = %{version}-%{release}
 Provides:       libusbx1-devel = %{version}-%{release}
 Provides:       libusbx-devel = %{version}-%{release}
+Provides:       usbx-devel = %{version}-%{release}
 Obsoletes:      libusb1-devel <= 1.0.9
 
 %description -n	%devellibname
