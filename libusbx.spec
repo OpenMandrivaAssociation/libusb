@@ -14,6 +14,7 @@ URL:            http://sourceforge.net/apps/mediawiki/libusbx/
 BuildRequires:  doxygen
 Provides:       libusbx1 = %{version}-%{release}
 Provides:       libusbx = %{version}-%{release}
+Provides:       libusb1 = %{version}-%{release}
 Obsoletes:      libusb1 <= 1.0.9
 
 %description
@@ -43,8 +44,11 @@ Summary:        Development files for %{name}
 Group:          Development/C
 Requires:       %{name}-devel-doc = %{version}-%{release}
 Provides:       libusbx1-devel = %{version}-%{release}
+Provides:       libusb1-devel = %{version}-%{release}
 Provides:       libusbx-devel = %{version}-%{release}
 Provides:       usbx-devel = %{version}-%{release}
+Provides:       usb1-devel = %{version}-%{release}
+Provides:       usb1.0-devel = %{version}-%{release}
 Obsoletes:      libusb1-devel <= 1.0.9
 
 %description -n	%devellibname
