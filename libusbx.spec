@@ -43,6 +43,7 @@ project did not produce a new release for over 18 months.
 Summary:        Development files for %{name}
 Group:          Development/C
 Requires:       %{name}-devel-doc = %{version}-%{release}
+Requires:       %{libname} = %{version}-%{release}
 Provides:       libusbx1-devel = %{version}-%{release}
 Provides:       libusb1-devel = %{version}-%{release}
 Provides:       libusbx-devel = %{version}-%{release}
