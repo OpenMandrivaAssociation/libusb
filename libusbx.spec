@@ -7,7 +7,7 @@
 Summary:        Library for accessing USB devices
 Name:           libusbx
 Version:        1.0.14
-Release:        2
+Release:        3
 Source0:        http://downloads.sourceforge.net/libusbx/libusbx-%{version}.tar.bz2
 License:        LGPLv2+
 Group:          System/Libraries
@@ -45,13 +45,6 @@ Requires:	%{name}-devel-doc = %{version}-%{release}
 Requires:	%{libname} = %{version}-%{release}
 %define	olddev	%{mklibname -d usbx %{api}}
 %rename		%{olddev}
-Provides:	libusbx1-devel = %{version}-%{release}
-Provides:	libusb1-devel = %{version}-%{release}
-Provides:	libusbx-devel = %{version}-%{release}
-Provides:	usbx-devel = %{version}-%{release}
-Provides:	usb1-devel = %{version}-%{release}
-Provides:	usb1.0-devel = %{version}-%{release}
-Obsoletes:	libusb1-devel <= 1.0.9
 
 %description -n	%{devname}
 The %{name}-devel package contains libraries and header files for
@@ -61,16 +54,9 @@ developing applications that use %{name}.
 Summary:        Development files for %{name}
 Group:          Development/C
 Requires:       %{name}-devel-doc = %{version}-%{release}
-Requires:       %{libname} = %{version}-%{release}
 Requires:       %{devname} = %{version}-%{release}
 %define	oldstat	%{mklibname -d -s usbx %{api}}
 %rename		%{oldstat}
-Provides:       libusbx1-static-devel = %{version}-%{release}
-Provides:       libusb1-static-devel = %{version}-%{release}
-Provides:       libusbx-static-devel = %{version}-%{release}
-Provides:       usbx-devel-static = %{version}-%{release}
-Provides:       usb1-static-devel = %{version}-%{release}
-Provides:       usb1.0-static-devel = %{version}-%{release}
 Obsoletes:      libusb1-static-devel <= 1.0.9
 
 %description -n	%{static}
@@ -81,8 +67,6 @@ developing applications that use %{name}.
 %package	devel-doc
 Summary:        Development files for %{name}
 Group:          Development/C
-Provides:       libusb1-devel-doc = %{version}-%{release}
-Obsoletes:      libusb1-devel-doc <= 1.0.9
 BuildArch:      noarch
 
 %description	devel-doc
