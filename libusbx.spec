@@ -1,8 +1,8 @@
 %define	api	1.0
 %define	major	0
-%define	libname	%mklibname usbx %{api} %{major}
-%define	devname	%mklibname -d usbx %{api}
-%define	static	%mklibname -d -s usbx %{api}
+%define	libname	%mklibname usb %{api} %{major}
+%define	devname	%mklibname -d usb %{api}
+%define	static	%mklibname -d -s usb %{api}
 
 Summary:        Library for accessing USB devices
 Name:           libusbx
@@ -28,6 +28,8 @@ if you need libusb-0.1 compatibility install the libusb package.
 %package -n	%{libname}
 Summary:	Libusbx is a fork of the original libusb
 Group:		System/Libraries
+%define oldlib	%{mklibname usbx %{api} %{major}}
+%rename		%{oldlib}
 
 %description -n	%{libname}
 Libusbx is a fork of the original libusb, which is a fully API and ABI
@@ -41,6 +43,8 @@ Summary:	Development files for %{name}
 Group:		Development/C
 Requires:	%{name}-devel-doc = %{version}-%{release}
 Requires:	%{libname} = %{version}-%{release}
+%define	olddev	%{mklibname -d usbx %{api}}
+%rename		%{olddev}
 Provides:	libusbx1-devel = %{version}-%{release}
 Provides:	libusb1-devel = %{version}-%{release}
 Provides:	libusbx-devel = %{version}-%{release}
@@ -59,6 +63,8 @@ Group:          Development/C
 Requires:       %{name}-devel-doc = %{version}-%{release}
 Requires:       %{libname} = %{version}-%{release}
 Requires:       %{devname} = %{version}-%{release}
+%define	oldstat	%{mklibname -d -s usbx %{api}}
+%rename		%{oldstat}
 Provides:       libusbx1-static-devel = %{version}-%{release}
 Provides:       libusb1-static-devel = %{version}-%{release}
 Provides:       libusbx-static-devel = %{version}-%{release}
@@ -106,16 +112,20 @@ popd
 %install
 %makeinstall_std
 
+mkdir %{buildroot}/%{_lib}
+mv %{buildroot}%{_libdir}/libusb-%{api}.so.%{major}* %{buildroot}/%{_lib}
+ln -srf %{buildroot}/%{_lib}/libusb-%{api}.so.%{major}.*.* %{buildroot}%{_libdir}/libusb-%{api}.so
+
 %files -n %{libname}
 %doc AUTHORS README NEWS
-%{_libdir}/*.so.%{major}*
+/%{_lib}/libusb-%{api}.so.%{major}*
 
 %files -n %{static}
 %{_libdir}/libusb-1.0.a
 
 %files -n %{devname}
 %{_includedir}/libusb-1.0
-%{_libdir}/*.so
+%{_libdir}/libusb-%{api}.so
 %{_libdir}/pkgconfig/libusb-1.0.pc
 
 %files devel-doc
