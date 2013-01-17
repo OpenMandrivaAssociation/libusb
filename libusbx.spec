@@ -45,6 +45,7 @@ Requires:	%{name}-devel-doc = %{version}-%{release}
 Requires:	%{libname} = %{version}-%{release}
 %define	olddev	%{mklibname -d usbx %{api}}
 %rename		%{olddev}
+Provides:	usb-devel = %{EVRD}
 
 %description -n	%{devname}
 The %{name}-devel package contains libraries and header files for
@@ -57,7 +58,7 @@ Requires:       %{name}-devel-doc = %{version}-%{release}
 Requires:       %{devname} = %{version}-%{release}
 %define	oldstat	%{mklibname -d -s usbx %{api}}
 %rename		%{oldstat}
-Obsoletes:      libusb1-static-devel <= 1.0.9
+Provides:	usb-static-devel = %{EVRD}
 
 %description -n	%{static}
 The %{name}-static-devel package contains libraries and header files for
