@@ -13,6 +13,7 @@ License:		LGPLv2+
 Group:			System/Libraries
 URL:			http://sourceforge.net/apps/mediawiki/libusbx/
 BuildRequires:	doxygen
+BuildConflicts:	%{_lib}usb-compat0.1_4 <= 0.1.4-3
 
 %description
 This package provides a way for applications to access USB devices.
