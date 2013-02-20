@@ -28,6 +28,7 @@ if you need libusb-0.1 compatibility install the libusb package.
 %package -n	%{libname}
 Summary:	Libusbx is a fork of the original libusb
 Group:		System/Libraries
+Requires(pre):	filesystem
 %define oldlib	%{mklibname usbx %{api} %{major}}
 %rename		%{oldlib}
 
@@ -46,6 +47,9 @@ Requires:	%{libname} = %{version}-%{release}
 %define	olddev	%{mklibname -d usbx %{api}}
 %rename		%{olddev}
 Provides:	usb-devel = %{EVRD}
+Provides:	usb1-devel = %{EVRD}
+Obsoletes:	%{mklibname -d usb 1.0} <= 1.0.9
+Requires(pre):	filesystem
 
 %description -n	%{devname}
 The %{name}-devel package contains libraries and header files for
@@ -56,9 +60,13 @@ Summary:		Development files for %{name}
 Group:			Development/C
 Requires:		%{name}-devel-doc = %{version}-%{release}
 Requires:		%{devname} = %{version}-%{release}
+Provides:		usb1-static-devel = %{version}-%{release}
+Provides:		usb%{api}-static-devel = %{version}-%{release}
 %define	oldstat	%{mklibname -d -s usbx %{api}}
 %rename			%{oldstat}
 Provides:		usb-static-devel = %{EVRD}
+Obsoletes:		%{mklibname -d -s usb 1.0} <= 1.0.9
+Obsoletes:		%{_lib}usb1.0-static-devel <= 1.0.9
 
 %description -n	%{static}
 The %{name}-static-devel package contains libraries and header files for
