@@ -1,18 +1,18 @@
-%define	api	1.0
-%define	major	0
-%define	libname	%mklibname usb %{api} %{major}
-%define	devname	%mklibname -d usb %{api}
-%define	static	%mklibname -d -s usb %{api}
+%define api	1.0
+%define major	0
+%define libname	%mklibname usb %{api} %{major}
+%define devname	%mklibname -d usb %{api}
+%define static	%mklibname -d -s usb %{api}
 
-Summary:        Library for accessing USB devices
-Name:           libusbx
-Version:        1.0.14
-Release:        3
-Source0:        http://downloads.sourceforge.net/libusbx/libusbx-%{version}.tar.bz2
-License:        LGPLv2+
-Group:          System/Libraries
-URL:            http://sourceforge.net/apps/mediawiki/libusbx/
-BuildRequires:  doxygen
+Summary:		Library for accessing USB devices
+Name:			libusbx
+Version:		1.0.14
+Release:		4
+Source0:		http://downloads.sourceforge.net/libusbx/libusbx-%{version}.tar.bz2
+License:		LGPLv2+
+Group:			System/Libraries
+URL:			http://sourceforge.net/apps/mediawiki/libusbx/
+BuildRequires:	doxygen
 
 %description
 This package provides a way for applications to access USB devices.
@@ -51,26 +51,26 @@ Provides:	usb-devel = %{EVRD}
 The %{name}-devel package contains libraries and header files for
 developing applications that use %{name}.
 
-%package -n     %{static}
-Summary:        Development files for %{name}
-Group:          Development/C
-Requires:       %{name}-devel-doc = %{version}-%{release}
-Requires:       %{devname} = %{version}-%{release}
+%package -n %{static}
+Summary:		Development files for %{name}
+Group:			Development/C
+Requires:		%{name}-devel-doc = %{version}-%{release}
+Requires:		%{devname} = %{version}-%{release}
 %define	oldstat	%{mklibname -d -s usbx %{api}}
-%rename		%{oldstat}
-Provides:	usb-static-devel = %{EVRD}
+%rename			%{oldstat}
+Provides:		usb-static-devel = %{EVRD}
 
 %description -n	%{static}
 The %{name}-static-devel package contains libraries and header files for
 developing applications that use %{name}.
 
 
-%package	devel-doc
-Summary:        Development files for %{name}
-Group:          Development/C
-BuildArch:      noarch
+%package devel-doc
+Summary:		Development files for %{name}
+Group:			Development/C
+BuildArch:		noarch
 
-%description	devel-doc
+%description devel-doc
 This package contains API documentation for %{name}.
 
 
@@ -87,7 +87,9 @@ autoconf
 autoreconf -fiv
 
 %build
-%configure --enable-examples-build
+%configure2_5x \
+		--enable-examples-build
+
 %make
 pushd doc
 make docs
@@ -102,13 +104,13 @@ mv %{buildroot}%{_libdir}/libusb-%{api}.so.%{major}* %{buildroot}/%{_lib}
 ln -srf %{buildroot}/%{_lib}/libusb-%{api}.so.%{major}.*.* %{buildroot}%{_libdir}/libusb-%{api}.so
 
 %files -n %{libname}
-%doc AUTHORS README NEWS
 /%{_lib}/libusb-%{api}.so.%{major}*
 
 %files -n %{static}
 %{_libdir}/libusb-1.0.a
 
 %files -n %{devname}
+%doc AUTHORS README NEWS
 %{_includedir}/libusb-1.0
 %{_libdir}/libusb-%{api}.so
 %{_libdir}/pkgconfig/libusb-1.0.pc
