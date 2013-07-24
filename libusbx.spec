@@ -12,6 +12,7 @@ Group:		System/Libraries
 Url:		http://sourceforge.net/apps/mediawiki/libusbx/
 Source0:	http://downloads.sourceforge.net/libusbx/libusbx-%{version}.tar.bz2
 BuildRequires:	doxygen
+BuildRequires:	udev-devel
 
 %description
 This package provides a way for applications to access USB devices.
