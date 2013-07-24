@@ -5,8 +5,8 @@
 
 Summary:	Library for accessing USB devices
 Name:		libusbx
-Version:	1.0.15
-Release:	2
+Version:	1.0.16
+Release:	1
 License:	LGPLv2+
 Group:		System/Libraries
 Url:		http://sourceforge.net/apps/mediawiki/libusbx/
