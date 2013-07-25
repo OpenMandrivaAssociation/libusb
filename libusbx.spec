@@ -6,7 +6,7 @@
 Summary:	Library for accessing USB devices
 Name:		libusbx
 Version:	1.0.16
-Release:	1
+Release:	2
 License:	LGPLv2+
 Group:		System/Libraries
 Url:		http://sourceforge.net/apps/mediawiki/libusbx/
@@ -39,7 +39,7 @@ project did not produce a new release for over 18 months.
 Summary:	Development files for %{name}
 Group:		Development/C
 Requires:	%{libname} = %{version}-%{release}
-Provides:	%{name} = %{version}-%{release}
+Provides:	%{name}-devel = %{version}-%{release}
 Obsoletes:	%{name}-devel-doc < 1.0.15-2
 
 %description -n	%{devname}
