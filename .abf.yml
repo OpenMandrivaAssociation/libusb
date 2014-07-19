@@ -1,5 +1,2 @@
-removed_sources:
-  libusbx-1.0.16.tar.bz2: ec164f02e6732c373e5a24be6b33a59142435615
-  libusbx-1.0.17.tar.bz2: a491054e7f4f3f52b12bd567335180586a54ae16
 sources:
-  libusbx-1.0.18.tar.bz2: dc206a4d3eafa740753937856b507d3d913a0e9d
+  libusb-1.0.19.tar.bz2: c5d14ced155233ceeb5107c7eb3b94b16649ae05
