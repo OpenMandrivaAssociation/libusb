@@ -4,36 +4,30 @@
 %define devname	%mklibname -d usb %{api}
 
 Summary:	Library for accessing USB devices
-Name:		libusbx
-Version:	1.0.16
-Release:	3
+Name:		libusb
+Version:	1.0.19
+Release:	0.1
 License:	LGPLv2+
 Group:		System/Libraries
-Url:		http://sourceforge.net/apps/mediawiki/libusbx/
-Source0:	http://downloads.sourceforge.net/libusbx/libusbx-%{version}.tar.bz2
+Url:		http://libusb.info
+Source0:	http://downloads.sourceforge.net/libusb/libusb-%{version}.tar.bz2
 BuildRequires:	doxygen
-BuildRequires:	udev-devel
+BuildRequires:	pkgconfig(udev)
 
 %description
 This package provides a way for applications to access USB devices.
 
-Libusbx is a fork of the original libusb, which is a fully API and ABI
-compatible drop in for the libusb-1.0.9 release. The libusbx fork was
-started by most of the libusb-1.0 developers, after the original libusb
-project did not produce a new release for over 18 months.
-
 Note that this library is not compatible with the original libusb-0.1 series,
-if you need libusb-0.1 compatibility install the libusb package.
+if you need libusb-0.1 compatibility install the libusb-compat package.
 
 %package -n	%{libname}
-Summary:	Libusbx is a fork of the original libusb
+Summary:	Library for accessing USB devices
 Group:		System/Libraries
 
 %description -n	%{libname}
-Libusbx is a fork of the original libusb, which is a fully API and ABI
-compatible drop in for the libusb-1.0.9 release. The libusbx fork was
-started by most of the libusb-1.0 developers, after the original libusb
-project did not produce a new release for over 18 months.
+libusb is a C library that provides generic access to USB devices. It is
+intended to be used by developers to facilitate the production of
+applications that communicate with USB hardware.
 
 %package -n	%{devname}
 Summary:	Development files for %{name}
@@ -54,7 +48,7 @@ for i in examples/*.c; do
 done
 
 %build
-%configure2_5x \
+%configure \
 	--disable-static \
 	--enable-examples-build
 
@@ -80,4 +74,3 @@ ln -srf %{buildroot}/%{_lib}/libusb-%{api}.so.%{major}.*.* %{buildroot}%{_libdir
 %{_libdir}/libusb-%{api}.so
 %{_libdir}/pkgconfig/libusb-1.0.pc
 %doc doc/html examples/*.c
-
