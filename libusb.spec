@@ -46,6 +46,7 @@ for i in examples/*.c; do
     touch -r $i $i.new
     mv $i.new $i
 done
+autoreconf -fiv
 
 %build
 %configure \
