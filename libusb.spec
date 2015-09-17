@@ -5,12 +5,12 @@
 
 Summary:	Library for accessing USB devices
 Name:		libusb
-Version:	1.0.19
-Release:	4
+Version:	1.0.20
+Release:	1
 License:	LGPLv2+
 Group:		System/Libraries
 Url:		http://libusb.info
-Source0:	http://downloads.sourceforge.net/libusb/libusb-%{version}.tar.bz2
+Source0:	https://github.com/libusb/libusb/releases/download/v%{version}/%{name}-%{version}.tar.bz2
 BuildRequires:	doxygen
 BuildRequires:	pkgconfig(udev)
 
