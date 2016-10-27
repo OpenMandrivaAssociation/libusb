@@ -5,8 +5,8 @@
 
 Summary:	Library for accessing USB devices
 Name:		libusb
-Version:	1.0.20
-Release:	2
+Version:	1.0.21
+Release:	1
 License:	LGPLv2+
 Group:		System/Libraries
 Url:		http://libusb.info
