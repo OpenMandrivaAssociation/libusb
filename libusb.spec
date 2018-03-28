@@ -5,7 +5,7 @@
 
 Summary:	Library for accessing USB devices
 Name:		libusb
-Version:	1.0.21
+Version:	1.0.22
 Release:	1
 License:	LGPLv2+
 Group:		System/Libraries
@@ -54,9 +54,9 @@ autoreconf -fiv
 	--enable-examples-build
 
 %make
-pushd doc
+cd doc
 make docs
-popd
+cd -
 
 
 %install
