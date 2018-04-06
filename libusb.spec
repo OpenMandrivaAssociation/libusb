@@ -1,11 +1,11 @@
-%define api	1.0
-%define major	0
-%define libname	%mklibname usb %{api} %{major}
-%define devname	%mklibname -d usb %{api}
+%define api 1.0
+%define major 0
+%define libname %mklibname usb %{api} %{major}
+%define devname %mklibname -d usb %{api}
 
 Summary:	Library for accessing USB devices
 Name:		libusb
-Version:	1.0.21
+Version:	1.0.22
 Release:	1
 License:	LGPLv2+
 Group:		System/Libraries
@@ -20,23 +20,23 @@ This package provides a way for applications to access USB devices.
 Note that this library is not compatible with the original libusb-0.1 series,
 if you need libusb-0.1 compatibility install the libusb-compat package.
 
-%package -n	%{libname}
+%package -n %{libname}
 Summary:	Library for accessing USB devices
 Group:		System/Libraries
 
-%description -n	%{libname}
+%description -n %{libname}
 libusb is a C library that provides generic access to USB devices. It is
 intended to be used by developers to facilitate the production of
 applications that communicate with USB hardware.
 
-%package -n	%{devname}
+%package -n %{devname}
 Summary:	Development files for %{name}
 Group:		Development/C
 Requires:	%{libname} = %{version}-%{release}
 Provides:	%{name}-devel = %{version}-%{release}
 Obsoletes:	%{name}-devel-doc < 1.0.15-2
 
-%description -n	%{devname}
+%description -n %{devname}
 This package includes the development files for %{name}.
 
 %prep
@@ -54,10 +54,9 @@ autoreconf -fiv
 	--enable-examples-build
 
 %make
-pushd doc
+cd doc
 make docs
-popd
-
+cd -
 
 %install
 %makeinstall_std
