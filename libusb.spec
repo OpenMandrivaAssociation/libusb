@@ -1,12 +1,12 @@
-%define api	1.0
-%define major	0
+%define api 1.0
+%define major 0
 %define libname	%mklibname usb %{api} %{major}
 %define devname	%mklibname -d usb %{api}
 
 Summary:	Library for accessing USB devices
 Name:		libusb
 Version:	1.0.22
-Release:	4
+Release:	5
 License:	LGPLv2+
 Group:		System/Libraries
 Url:		http://libusb.info
@@ -40,7 +40,8 @@ Obsoletes:	%{name}-devel-doc < 1.0.15-2
 This package includes the development files for %{name}.
 
 %prep
-%setup -q
+%autosetup -p1
+
 for i in examples/*.c; do
     iconv -f ISO-8859-1 -t UTF-8 -o $i.new $i
     touch -r $i $i.new
@@ -53,14 +54,15 @@ autoreconf -fiv
 	--disable-static \
 	--enable-examples-build
 
-%make
+%make_build
+
 cd doc
 make docs
 cd -
 
 
 %install
-%makeinstall_std
+%make_install
 
 mkdir %{buildroot}/%{_lib}
 mv %{buildroot}%{_libdir}/libusb-%{api}.so.%{major}* %{buildroot}/%{_lib}
