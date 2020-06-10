@@ -1,18 +1,28 @@
+# libusb is used by wine and sdl2 (which is used by many games)
+%ifarch %{x86_64}
+%bcond_without compat32
+%endif
+
 %define api 1.0
 %define major 0
 %define libname %mklibname usb %{api} %{major}
 %define devname %mklibname -d usb %{api}
+%define lib32name %mklib32name usb %{api} %{major}
+%define dev32name %mklib32name -d usb %{api}
 
 Summary:	Library for accessing USB devices
 Name:		libusb
 Version:	1.0.23
-Release:	3
+Release:	4
 License:	LGPLv2+
 Group:		System/Libraries
 Url:		http://libusb.info
 Source0:	https://github.com/libusb/libusb/releases/download/v%{version}/%{name}-%{version}.tar.bz2
 BuildRequires:	doxygen
 BuildRequires:	pkgconfig(udev)
+%if %{with compat32}
+BuildRequires:	devel(libudev)
+%endif
 
 %description
 This package provides a way for applications to access USB devices.
@@ -39,6 +49,26 @@ Obsoletes:	%{name}-devel-doc < 1.0.15-2
 %description -n %{devname}
 This package includes the development files for %{name}.
 
+%if %{with compat32}
+%package -n %{lib32name}
+Summary:	Library for accessing USB devices (32-bit)
+Group:		System/Libraries
+
+%description -n %{lib32name}
+libusb is a C library that provides generic access to USB devices. It is
+intended to be used by developers to facilitate the production of
+applications that communicate with USB hardware.
+
+%package -n %{dev32name}
+Summary:	Development files for %{name} (32-bit)
+Group:		Development/C
+Requires:	%{devname} = %{version}-%{release}
+Requires:	%{lib32name} = %{version}-%{release}
+
+%description -n %{dev32name}
+This package includes the development files for %{name}.
+%endif
+
 %prep
 %autosetup -p1
 
@@ -49,19 +79,34 @@ for i in examples/*.c; do
 done
 autoreconf -fiv
 
-%build
+export CONFIGURE_TOP="$(pwd)"
+%if %{with compat32}
+mkdir build32
+cd build32
+%configure32 \
+	--disable-examples-build
+cd ..
+%endif
+mkdir build
+cd build
 %configure \
-	--disable-static \
 	--enable-examples-build
 
-%make_build
+%build
+%if %{with compat32}
+%make_build -C build32
+%endif
+%make_build -C build
 
-cd doc
+cd build/doc
 make docs
 cd -
 
 %install
-%make_install
+%if %{with compat32}
+%make_install -C build32
+%endif
+%make_install -C build
 
 mkdir %{buildroot}/%{_lib}
 mv %{buildroot}%{_libdir}/libusb-%{api}.so.%{major}* %{buildroot}/%{_lib}
@@ -75,4 +120,13 @@ ln -srf %{buildroot}/%{_lib}/libusb-%{api}.so.%{major}.*.* %{buildroot}%{_libdir
 %{_includedir}/libusb-1.0
 %{_libdir}/libusb-%{api}.so
 %{_libdir}/pkgconfig/libusb-1.0.pc
-%doc doc/html examples/*.c
+%doc build/doc/html examples/*.c
+
+%if %{with compat32}
+%files -n %{lib32name}
+%{_prefix}/lib/libusb-%{api}.so.%{major}*
+
+%files -n %{dev32name}
+%{_prefix}/lib/libusb-%{api}.so
+%{_prefix}/lib/pkgconfig/libusb-1.0.pc
+%endif
