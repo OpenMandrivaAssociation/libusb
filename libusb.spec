@@ -12,8 +12,8 @@
 
 Summary:	Library for accessing USB devices
 Name:		libusb
-Version:	1.0.23
-Release:	4
+Version:	1.0.24
+Release:	1
 License:	LGPLv2+
 Group:		System/Libraries
 Url:		http://libusb.info
@@ -120,7 +120,7 @@ ln -srf %{buildroot}/%{_lib}/libusb-%{api}.so.%{major}.*.* %{buildroot}%{_libdir
 %{_includedir}/libusb-1.0
 %{_libdir}/libusb-%{api}.so
 %{_libdir}/pkgconfig/libusb-1.0.pc
-%doc build/doc/html examples/*.c
+%doc examples/*.c
 
 %if %{with compat32}
 %files -n %{lib32name}
