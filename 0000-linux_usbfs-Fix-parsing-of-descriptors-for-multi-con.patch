@@ -56,13 +56,6 @@ index fb2ed53..4d2dc8d 100644
  				if (offset < 0)
  					return offset;
  				sysfs_config_len = (uint16_t)offset;
-diff --git a/libusb/version_nano.h b/libusb/version_nano.h
-index 61a0a70..578b097 100644
---- a/libusb/version_nano.h
-+++ b/libusb/version_nano.h
-@@ -1 +1 @@
--#define LIBUSB_NANO 11585
-+#define LIBUSB_NANO 11586
 -- 
 2.30.0
 
