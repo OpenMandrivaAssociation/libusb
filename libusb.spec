@@ -13,11 +13,13 @@
 Summary:	Library for accessing USB devices
 Name:		libusb
 Version:	1.0.24
-Release:	1
+Release:	2
 License:	LGPLv2+
 Group:		System/Libraries
 Url:		http://libusb.info
 Source0:	https://github.com/libusb/libusb/releases/download/v%{version}/%{name}-%{version}.tar.bz2
+#(tpg) patches from upstream
+Patch0:		0000-linux_usbfs-Fix-parsing-of-descriptors-for-multi-con.patch
 BuildRequires:	doxygen
 BuildRequires:	pkgconfig(udev)
 %if %{with compat32}
