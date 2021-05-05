@@ -1,0 +1,60 @@
+From c486d01297a366aae8dcd3f715d0bfd8b995949b Mon Sep 17 00:00:00 2001
+From: Chris Dickens <christopher.a.dickens@gmail.com>
+Date: Mon, 8 Feb 2021 09:27:20 -0800
+Subject: [PATCH 1/2] linux_usbfs: Accept sysfs attributes not terminated with
+ newline
+
+Benjamin Berg reports that some CI systems that simulate sysfs devices
+are causing libusb to report errors because such systems are not
+conforming to the sysfs pattern of terminating attribute values with a
+newline character. Reduce the severity of encountering such
+non-conforming attibute values from an error that prevents enumeration
+to a warning message.
+
+Closes #857
+
+Signed-off-by: Chris Dickens <christopher.a.dickens@gmail.com>
+---
+ libusb/os/linux_usbfs.c | 12 +++++++-----
+ libusb/version_nano.h   |  2 +-
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/libusb/os/linux_usbfs.c b/libusb/os/linux_usbfs.c
+index 4882c0f..ebf8cfe 100644
+--- a/libusb/os/linux_usbfs.c
++++ b/libusb/os/linux_usbfs.c
+@@ -505,7 +505,7 @@ static int read_sysfs_attr(struct libusb_context *ctx,
+ 	if (fd < 0)
+ 		return fd;
+ 
+-	r = read(fd, buf, sizeof(buf));
++	r = read(fd, buf, sizeof(buf) - 1);
+ 	if (r < 0) {
+ 		r = errno;
+ 		close(fd);
+@@ -523,16 +523,18 @@ static int read_sysfs_attr(struct libusb_context *ctx,
+ 		return 0;
+ 	}
+ 
+-	/* The kernel does *not* NULL-terminate the string, but every attribute
++	/* The kernel does *not* NUL-terminate the string, but every attribute
+ 	 * should be terminated with a newline character. */
+ 	if (!isdigit(buf[0])) {
+ 		usbi_err(ctx, "attribute %s doesn't have numeric value?", attr);
+ 		return LIBUSB_ERROR_IO;
+ 	} else if (buf[r - 1] != '\n') {
+-		usbi_err(ctx, "attribute %s doesn't end with newline?", attr);
+-		return LIBUSB_ERROR_IO;
++		usbi_warn(ctx, "attribute %s doesn't end with newline?", attr);
++	} else {
++		/* Remove the terminating newline character */
++		r--;
+ 	}
+-	buf[r - 1] = '\0';
++	buf[r] = '\0';
+ 
+ 	errno = 0;
+ 	value = strtol(buf, &endptr, 10);
+-- 
+2.29.2
+

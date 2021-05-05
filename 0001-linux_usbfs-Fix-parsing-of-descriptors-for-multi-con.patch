@@ -57,5 +57,5 @@ index fb2ed53..4d2dc8d 100644
  					return offset;
  				sysfs_config_len = (uint16_t)offset;
 -- 
-2.30.0
+2.29.2
 
