@@ -1,3 +1,5 @@
+%global %{optflags} -Wno-error=maybe-uninitialized
+
 # libusb is used by wine and sdl2 (which is used by many games)
 %ifarch %{x86_64}
 %bcond_without compat32
