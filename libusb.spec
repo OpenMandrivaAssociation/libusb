@@ -18,7 +18,7 @@ Version:	1.0.27
 Release:	1
 License:	LGPLv2+
 Group:		System/Libraries
-Url:		http://libusb.info
+Url:		https://libusb.info
 Source0:	https://github.com/libusb/libusb/releases/download/v%{version}/%{name}-%{version}.tar.bz2
 
 BuildRequires:	doxygen
