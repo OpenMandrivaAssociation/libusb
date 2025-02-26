@@ -1,0 +1,50 @@
+From 418aadc0f9017b7a1bc237f72ffcf684da167567 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Tue, 9 Apr 2024 13:32:50 -0400
+Subject: [PATCH] darwin: Always use uppercase literal suffixes for improved
+ readability
+
+Depending on the font, an l suffix can look like a 1. Consider "231l".
+Thus prefer uppercase.
+
+Fixes all clang-tidy readability-uppercase-literal-suffix warnings
+
+References #1479
+---
+ .clang-tidy            | 1 -
+ libusb/os/darwin_usb.c | 2 +-
+ libusb/version_nano.h  | 2 +-
+ 3 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/.clang-tidy b/.clang-tidy
+index 32028c75e..527544ade 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -35,7 +35,6 @@ readability-*,\
+ -readability-inconsistent-declaration-parameter-name,\
+ -readability-isolate-declaration,\
+ -readability-magic-numbers,\
+--readability-uppercase-literal-suffix,\
+ -readability-misleading-indentation,\
+ "
+ #WarningsAsErrors: "*"
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index 7bb496b65..a63a01e52 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -694,7 +694,7 @@ static void darwin_devices_detached (void *ptr, io_iterator_t rem_devices) {
+ static void darwin_hotplug_poll (void)
+ {
+   /* not sure if 1 ms will be too long/short but it should work ok */
+-  mach_timespec_t timeout = {.tv_sec = 0, .tv_nsec = 1000000ul};
++  mach_timespec_t timeout = {.tv_sec = 0, .tv_nsec = 1000000UL};
+ 
+   /* since a kernel thread may notify the IOIterators used for
+    * hotplug notification we can't just clear the iterators.
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index b4c4f629d..b315ee36e 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11918
++#define LIBUSB_NANO 11919

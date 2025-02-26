@@ -1,0 +1,40 @@
+From 016a0de33ac94b19c7772d6c20fbea7fec23bf68 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Sat, 3 Feb 2024 22:32:52 -0500
+Subject: [PATCH] descriptor: Fix potential offsetting of pointer by too much
+
+This was checking that `size` is at least `LIBUSB_DT_CONFIG_SIZE` (9)
+bytes long, but then increments the pointer with `buf +=
+header.bLength`. That could end up pointing past of the end of the
+buffer. There is a subsequent check that would prevent dereferencing it,
+but it's still undefined behaviour to even create such a pointer.
+
+Add a check with a similar pattern as elsewhere in this file.
+---
+ libusb/descriptor.c   | 5 +++++
+ libusb/version_nano.h | 2 +-
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/libusb/descriptor.c b/libusb/descriptor.c
+index 45056b12f..d3aa9398a 100644
+--- a/libusb/descriptor.c
++++ b/libusb/descriptor.c
+@@ -1334,6 +1334,11 @@ static int parse_iad_array(struct libusb_context *ctx,
+ 				 header.bLength);
+ 			return LIBUSB_ERROR_IO;
+ 		}
++		else if (header.bLength > size) {
++			usbi_warn(ctx, "short config descriptor read %d/%u",
++					  size, header.bLength);
++			return LIBUSB_ERROR_IO;
++		}
+ 		if (header.bDescriptorType == LIBUSB_DT_INTERFACE_ASSOCIATION)
+ 			iad_array->length++;
+ 		buf += header.bLength;
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 3e99f0837..2dc4c93f2 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11909
++#define LIBUSB_NANO 11910

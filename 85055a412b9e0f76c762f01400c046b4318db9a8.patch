@@ -1,0 +1,49 @@
+From 85055a412b9e0f76c762f01400c046b4318db9a8 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Tue, 9 Apr 2024 13:29:35 -0400
+Subject: [PATCH] examples/xusb: Make all macro replacement lists parenthesized
+
+To protect any lower-precedence operators from the surrounding
+expression.
+
+Fixes all clang-tidy bugprone-macro-parentheses warnings
+
+References #1479
+---
+ .clang-tidy           | 1 -
+ examples/xusb.c       | 2 +-
+ libusb/version_nano.h | 2 +-
+ 3 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/.clang-tidy b/.clang-tidy
+index ed3733a9a..741ce8e39 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -6,7 +6,6 @@ bugprone-*,\
+ -bugprone-branch-clone,\
+ -bugprone-easily-swappable-parameters,\
+ -bugprone-implicit-widening-of-multiplication-result,\
+--bugprone-macro-parentheses,\
+ -bugprone-misplaced-widening-cast,\
+ -bugprone-narrowing-conversions,\
+ -bugprone-signed-char-misuse,\
+diff --git a/examples/xusb.c b/examples/xusb.c
+index 1ee463981..effa26616 100644
+--- a/examples/xusb.c
++++ b/examples/xusb.c
+@@ -66,7 +66,7 @@ static void perr(char const *format, ...)
+ 	va_end(args);
+ }
+ 
+-#define ERR_EXIT(errcode) do { perr("   %s\n", libusb_strerror((enum libusb_error)errcode)); return -1; } while (0)
++#define ERR_EXIT(errcode) do { perr("   %s\n", libusb_strerror((enum libusb_error)(errcode))); return -1; } while (0)
+ #define CALL_CHECK(fcall) do { int _r=fcall; if (_r < 0) ERR_EXIT(_r); } while (0)
+ #define CALL_CHECK_CLOSE(fcall, hdl) do { int _r=fcall; if (_r < 0) { libusb_close(hdl); ERR_EXIT(_r); } } while (0)
+ #define B(x) (((x)!=0)?1:0)
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index d1a8342bf..970662747 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11915
++#define LIBUSB_NANO 11916

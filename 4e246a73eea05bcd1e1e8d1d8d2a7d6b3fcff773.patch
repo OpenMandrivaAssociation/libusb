@@ -1,0 +1,52 @@
+From 4e246a73eea05bcd1e1e8d1d8d2a7d6b3fcff773 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Sat, 30 Dec 2023 22:14:13 -0500
+Subject: [PATCH] xcode: Enable several additional warnings in the Xcode
+ project
+
+These don't generate any warnings anymore (with Xcode 15).
+
+References #1414
+---
+ Xcode/common.xcconfig | 20 ++++++++++++++++++++
+ libusb/version_nano.h |  2 +-
+ 2 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/Xcode/common.xcconfig b/Xcode/common.xcconfig
+index 06108ad27..67514458c 100644
+--- a/Xcode/common.xcconfig
++++ b/Xcode/common.xcconfig
+@@ -65,6 +65,26 @@ CLANG_WARN_INT_CONVERSION = YES
+ CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES
+ CLANG_WARN_STRICT_PROTOTYPES = YES
+ CLANG_WARN_SUSPICIOUS_IMPLICIT_CONVERSION = YES
++CLANG_WARN_COMPLETION_HANDLER_MISUSE = YES
++CLANG_WARN_IMPLICIT_FALLTHROUGH = YES
++CLANG_WARN_FRAMEWORK_INCLUDE_PRIVATE_FROM_PUBLIC = YES
++CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES
++CLANG_WARN_SEMICOLON_BEFORE_METHOD_BODY = YES
++GCC_WARN_SIGN_COMPARE = YES
++CLANG_WARN__EXIT_TIME_DESTRUCTORS = YES
++GCC_WARN_NON_VIRTUAL_DESTRUCTOR = YES
++GCC_WARN_HIDDEN_VIRTUAL_FUNCTIONS = YES
++CLANG_WARN_ATOMIC_IMPLICIT_SEQ_CST = YES
++CLANG_WARN_OBJC_IMPLICIT_ATOMIC_PROPERTIES = YES
++CLANG_WARN_OBJC_INTERFACE_IVARS = YES
++GCC_WARN_STRICT_SELECTOR_MATCH = YES
++CLANG_WARN_OBJC_REPEATED_USE_OF_WEAK = YES
++CLANG_WARN_UNREACHABLE_CODE = YES
++CLANG_WARN_RANGE_LOOP_ANALYSIS = YES
++CLANG_WARN_SUSPICIOUS_MOVE = YES
++CLANG_WARN__DUPLICATE_METHOD_MATCH = YES
++CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES
++GCC_WARN_UNDECLARED_SELECTOR = YES
+ 
+ // Static analyzer warnings.
+ CLANG_ANALYZER_NONNULL = YES
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 677ea883d..d02e6d4f2 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11890
++#define LIBUSB_NANO 11891

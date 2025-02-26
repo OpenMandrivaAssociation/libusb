@@ -1,0 +1,46 @@
+From 43107c84e4a5f6b15c296eff8cc3578100f35dce Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Mon, 1 Jan 2024 23:46:06 -0500
+Subject: [PATCH] darwin: Suppress false positive warning with an assert
+
+The clang static analyzer doesn't see that the pointer will always be
+non-NULL if the return value is success. Just assert this fact so that
+it can see this, and then it won't warn:
+
+Access to field 'can_enumerate' results in a dereference of a null
+pointer (loaded from variable 'cached_device')
+
+References #1414
+---
+ libusb/os/darwin_usb.c | 3 +++
+ libusb/version_nano.h  | 2 +-
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index c129cf5b4..bcfa3ca62 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -1362,6 +1362,8 @@ static enum libusb_error darwin_get_cached_device(struct libusb_context *ctx, io
+ 
+   usbi_mutex_unlock(&darwin_cached_devices_mutex);
+ 
++  assert((ret == LIBUSB_SUCCESS) ? (*cached_out != NULL) : true);
++
+   return ret;
+ }
+ 
+@@ -1472,6 +1474,7 @@ static enum libusb_error darwin_scan_devices(struct libusb_context *ctx) {
+ 
+   while ((service = IOIteratorNext (deviceIterator))) {
+     ret = darwin_get_cached_device (ctx, service, &cached_device, &old_session_id);
++    assert((ret >= 0) ? (cached_device != NULL) : true);
+     if (ret < 0 || !cached_device->can_enumerate) {
+       continue;
+     }
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index daf8db4fe..a859d2792 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11892
++#define LIBUSB_NANO 11893

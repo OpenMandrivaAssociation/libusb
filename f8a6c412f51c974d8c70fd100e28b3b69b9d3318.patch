@@ -1,0 +1,91 @@
+From f8a6c412f51c974d8c70fd100e28b3b69b9d3318 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Wed, 3 Jan 2024 19:37:43 -0500
+Subject: [PATCH] darwin: Cleanup of usbi_backend structure
+
+No real change.
+
+- rearrange elements to be initialized in the same order as they appear
+  in the struct declaration
+
+- explicitly set values to NULL so that global searches for things like
+  `wrap_sys_device` easily reveal that the function is NULL on Darwin
+
+Closes #1439
+---
+ libusb/os/darwin_usb.c | 28 +++++++++++++++++++---------
+ libusb/version_nano.h  |  2 +-
+ 2 files changed, 20 insertions(+), 10 deletions(-)
+
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index bcfa3ca62..238fbb184 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -2895,15 +2895,26 @@ const struct usbi_os_backend usbi_backend = {
+         .caps = USBI_CAP_SUPPORTS_DETACH_KERNEL_DRIVER,
+         .init = darwin_init,
+         .exit = darwin_exit,
+-        .get_active_config_descriptor = darwin_get_active_config_descriptor,
+-        .get_config_descriptor = darwin_get_config_descriptor,
++        .set_option = NULL,
++        .get_device_list = NULL,
+         .hotplug_poll = darwin_hotplug_poll,
+-
++        .wrap_sys_device = NULL,
+         .open = darwin_open,
+         .close = darwin_close,
++        .get_active_config_descriptor = darwin_get_active_config_descriptor,
++        .get_config_descriptor = darwin_get_config_descriptor,
++        .get_config_descriptor_by_value = NULL,
+         .get_configuration = darwin_get_configuration,
+         .set_configuration = darwin_set_configuration,
+ 
++#if MAX_INTERFACE_VERSION >= 700
++        .claim_interface = darwin_capture_claim_interface,
++        .release_interface = darwin_capture_release_interface,
++#else
++        .claim_interface = darwin_claim_interface,
++        .release_interface = darwin_release_interface,
++#endif
++
+         .set_interface_altsetting = darwin_set_interface_altsetting,
+         .clear_halt = darwin_clear_halt,
+         .reset_device = darwin_reset_device,
+@@ -2913,25 +2924,24 @@ const struct usbi_os_backend usbi_backend = {
+         .free_streams = darwin_free_streams,
+ #endif
+ 
++        .dev_mem_alloc = NULL,
++        .dev_mem_free = NULL,
+         .kernel_driver_active = darwin_kernel_driver_active,
+ 
+ #if MAX_INTERFACE_VERSION >= 700
+         .detach_kernel_driver = darwin_detach_kernel_driver,
+         .attach_kernel_driver = darwin_attach_kernel_driver,
+-        .claim_interface = darwin_capture_claim_interface,
+-        .release_interface = darwin_capture_release_interface,
+-#else
+-        .claim_interface = darwin_claim_interface,
+-        .release_interface = darwin_release_interface,
+ #endif
+ 
+         .destroy_device = darwin_destroy_device,
+ 
+         .submit_transfer = darwin_submit_transfer,
+         .cancel_transfer = darwin_cancel_transfer,
+-
++        .clear_transfer_priv = NULL,
++        .handle_events = NULL,
+         .handle_transfer_completion = darwin_handle_transfer_completion,
+ 
++        .context_priv_size = 0,
+         .device_priv_size = sizeof(struct darwin_device_priv),
+         .device_handle_priv_size = sizeof(struct darwin_device_handle_priv),
+         .transfer_priv_size = sizeof(struct darwin_transfer_priv),
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 7938a7ec0..6b4634cd9 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11895
++#define LIBUSB_NANO 11896

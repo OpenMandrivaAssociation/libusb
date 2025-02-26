@@ -1,0 +1,45 @@
+From e678b3fad58a508cbd0a6e6dc777fb48346f948b Mon Sep 17 00:00:00 2001
+From: Jon Beniston <jon@beniston.com>
+Date: Fri, 24 May 2024 14:36:22 +0100
+Subject: [PATCH] Emscripten: Avoid uncaught TypeError on browsers without USB
+ support
+
+Check if navigator.usb exists before trying to call one of its methods,
+to avoid unhandled exception, e.g. on current Firefox.
+
+Closes #1500
+---
+ libusb/os/emscripten_webusb.cpp | 7 ++++++-
+ libusb/version_nano.h           | 2 +-
+ 2 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/libusb/os/emscripten_webusb.cpp b/libusb/os/emscripten_webusb.cpp
+index ced9ad820..0d7fec92b 100644
+--- a/libusb/os/emscripten_webusb.cpp
++++ b/libusb/os/emscripten_webusb.cpp
+@@ -586,12 +586,17 @@ unsigned long getDeviceSessionId(val& web_usb_device) {
+ }
+ 
+ val getDeviceList(libusb_context* ctx, discovered_devs** devs) {
++	// Check if browser supports USB
++	val navigator_usb = val::global("navigator")["usb"];
++	if (navigator_usb == val::undefined()) {
++		co_return (int) LIBUSB_ERROR_NOT_SUPPORTED;
++	}
+ 	// C++ equivalent of `await navigator.usb.getDevices()`. Note: at this point
+ 	// we must already have some devices exposed - caller must have called
+ 	// `await navigator.usb.requestDevice(...)` in response to user interaction
+ 	// before going to LibUSB. Otherwise this list will be empty.
+ 	auto web_usb_devices =
+-		co_await_try(val::global("navigator")["usb"].call<val>("getDevices"));
++		co_await_try(navigator_usb.call<val>("getDevices"));
+ 	for (auto&& web_usb_device : web_usb_devices) {
+ 		auto session_id = getDeviceSessionId(web_usb_device);
+ 
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index e399e6569..8cad99459 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11912
++#define LIBUSB_NANO 11913

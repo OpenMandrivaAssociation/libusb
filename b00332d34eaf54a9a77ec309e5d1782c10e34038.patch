@@ -1,0 +1,61 @@
+From b00332d34eaf54a9a77ec309e5d1782c10e34038 Mon Sep 17 00:00:00 2001
+From: Fabien Sanglard <fabiensanglard.net@gmail.com>
+Date: Tue, 21 May 2024 17:04:26 -0700
+Subject: [PATCH] SuperSpeedPlus: Fix typo mantisa -> mantissa in struct field
+
+Fixup of commit f00f06e9
+
+Closes #1499
+---
+ examples/xusb.c       | 2 +-
+ libusb/descriptor.c   | 2 +-
+ libusb/libusb.h       | 2 +-
+ libusb/version_nano.h | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/examples/xusb.c b/examples/xusb.c
+index 83e5525d7..1ca905f14 100644
+--- a/examples/xusb.c
++++ b/examples/xusb.c
+@@ -770,7 +770,7 @@ static void print_sublink_speed_attribute(struct libusb_ssplus_sublink_attribute
+ 	static const char exponent[] = " KMG";
+ 	printf("                  id=%u speed=%u%cbs %s %s SuperSpeed%s",
+ 		ss_attr->ssid,
+-		ss_attr->mantisa,
++		ss_attr->mantissa,
+ 		(exponent[ss_attr->exponent]),
+ 		(ss_attr->type == LIBUSB_SSPLUS_ATTR_TYPE_ASYM)? "Asym" : "Sym",
+ 		(ss_attr->direction == LIBUSB_SSPLUS_ATTR_DIR_TX)? "TX" : "RX",
+diff --git a/libusb/descriptor.c b/libusb/descriptor.c
+index b72f558c9..3814682f8 100644
+--- a/libusb/descriptor.c
++++ b/libusb/descriptor.c
+@@ -1070,7 +1070,7 @@ int API_EXPORTED libusb_get_ssplus_usb_device_capability_descriptor(
+ 	for(uint8_t i = 0 ; i < _ssplus_cap->numSublinkSpeedAttributes ; i++) {
+ 		uint32_t attr = READ_LE32(base + i * sizeof(uint32_t));
+ 		_ssplus_cap->sublinkSpeedAttributes[i].ssid = attr & 0x0f;
+-		_ssplus_cap->sublinkSpeedAttributes[i].mantisa = attr >> 16;
++		_ssplus_cap->sublinkSpeedAttributes[i].mantissa = attr >> 16;
+ 		_ssplus_cap->sublinkSpeedAttributes[i].exponent = (attr >> 4) & 0x3 ;
+ 		_ssplus_cap->sublinkSpeedAttributes[i].type = attr & 0x40 ? 	LIBUSB_SSPLUS_ATTR_TYPE_ASYM : LIBUSB_SSPLUS_ATTR_TYPE_SYM;
+ 		_ssplus_cap->sublinkSpeedAttributes[i].direction = attr & 0x80 ? 	LIBUSB_SSPLUS_ATTR_DIR_TX : 	LIBUSB_SSPLUS_ATTR_DIR_RX;
+diff --git a/libusb/libusb.h b/libusb/libusb.h
+index 2353f4c72..a3be4cc01 100644
+--- a/libusb/libusb.h
++++ b/libusb/libusb.h
+@@ -1051,7 +1051,7 @@ struct libusb_ssplus_sublink_attribute {
+ 
+ 	/** This field defines the mantissa that shall be applied to the exponent when
+      calculating the maximum bit rate. */
+-	uint16_t mantisa;
++	uint16_t mantissa;
+ };
+ 
+ /** \ingroup libusb_desc
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index d4f0bc925..c23d11740 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11899
++#define LIBUSB_NANO 11900

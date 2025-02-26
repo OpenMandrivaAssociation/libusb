@@ -1,0 +1,84 @@
+From 916c740076d960f2b759e264a0fb456643182590 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Sun, 4 Feb 2024 21:04:41 -0500
+Subject: [PATCH] descriptor: Avoid buffer over-increment in parse_iad_array
+ function
+
+The first iteration of this loop was safe because the beginning of the
+function checked that `size` is at least LIBUSB_DT_CONFIG_SIZE (9) bytes
+long.
+
+But for subsequent iterations, it could advance the pointer too far
+(which is undefined behaviour) depending on the content of the buffer
+itself.
+
+Closes #1460
+---
+ libusb/descriptor.c   | 15 +++++++++------
+ libusb/libusb.h       |  1 +
+ libusb/version_nano.h |  2 +-
+ 3 files changed, 11 insertions(+), 7 deletions(-)
+
+diff --git a/libusb/descriptor.c b/libusb/descriptor.c
+index 5b83cc982..9d909440c 100644
+--- a/libusb/descriptor.c
++++ b/libusb/descriptor.c
+@@ -1329,7 +1329,7 @@ static int parse_iad_array(struct libusb_context *ctx,
+ 	while (consumed < size) {
+ 		header.bLength = buf[0];
+ 		header.bDescriptorType = buf[1];
+-		if (header.bLength < 2) {
++		if (header.bLength < DESC_HEADER_LENGTH) {
+ 			usbi_err(ctx, "invalid descriptor bLength %d",
+ 				 header.bLength);
+ 			return LIBUSB_ERROR_IO;
+@@ -1354,12 +1354,12 @@ static int parse_iad_array(struct libusb_context *ctx,
+ 		iad_array->iad = iad;
+ 
+ 		/* Second pass: Iterate through desc list, fill IAD structures */
+-		consumed = 0;
++		int remaining = size;
+ 		i = 0;
+-		while (consumed < size) {
++		do {
+ 			header.bLength = buffer[0];
+ 			header.bDescriptorType = buffer[1];
+-			if (header.bDescriptorType == LIBUSB_DT_INTERFACE_ASSOCIATION) {
++			if (header.bDescriptorType == LIBUSB_DT_INTERFACE_ASSOCIATION && (remaining >= LIBUSB_DT_INTERFACE_ASSOCIATION_SIZE)) {
+ 				iad[i].bLength = buffer[0];
+ 				iad[i].bDescriptorType = buffer[1];
+ 				iad[i].bFirstInterface = buffer[2];
+@@ -1371,9 +1371,12 @@ static int parse_iad_array(struct libusb_context *ctx,
+ 				i++;
+ 			}
+ 
++			remaining -= header.bLength;
++			if (remaining < DESC_HEADER_LENGTH) {
++				break;
++			}
+ 			buffer += header.bLength;
+-			consumed += header.bLength;
+-		}
++		} while (1);
+ 	}
+ 
+ 	return LIBUSB_SUCCESS;
+diff --git a/libusb/libusb.h b/libusb/libusb.h
+index fa1ca6b44..a40783811 100644
+--- a/libusb/libusb.h
++++ b/libusb/libusb.h
+@@ -335,6 +335,7 @@ enum libusb_descriptor_type {
+ #define LIBUSB_DT_SS_ENDPOINT_COMPANION_SIZE	6
+ #define LIBUSB_DT_BOS_SIZE			5
+ #define LIBUSB_DT_DEVICE_CAPABILITY_SIZE	3
++#define LIBUSB_DT_INTERFACE_ASSOCIATION_SIZE	8
+ 
+ /* BOS descriptor sizes */
+ #define LIBUSB_BT_USB_2_0_EXTENSION_SIZE	7
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 6fee87bbe..e399e6569 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11911
++#define LIBUSB_NANO 11912

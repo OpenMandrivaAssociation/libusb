@@ -1,0 +1,56 @@
+From 6883f84f931b3c8e975a9b7877680df8406495c5 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Tue, 9 Apr 2024 13:37:12 -0400
+Subject: [PATCH] darwin: Explicitly compare string compare function results to
+ -1, 0, or 1
+
+Fixes all clang-tidy bugprone-suspicious-string-compare warnings
+
+References #1479
+---
+ .clang-tidy            | 1 -
+ libusb/os/darwin_usb.c | 4 ++--
+ libusb/version_nano.h  | 2 +-
+ 3 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/.clang-tidy b/.clang-tidy
+index 527544ade..27a8aa893 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -9,7 +9,6 @@ bugprone-*,\
+ -bugprone-misplaced-widening-cast,\
+ -bugprone-narrowing-conversions,\
+ -bugprone-signed-char-misuse,\
+--bugprone-suspicious-string-compare,\
+ -bugprone-switch-missing-default-case,\
+ clang-analyzer-*,\
+ -clang-analyzer-core.NullDereference,\
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index a63a01e52..b75d70365 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -2123,7 +2123,7 @@ static int darwin_reenumerate_device (struct libusb_device_handle *dev_handle, b
+   /* compare descriptors */
+   usbi_dbg (ctx, "darwin/reenumerate_device: checking whether descriptors changed");
+ 
+-  if (memcmp (&descriptor, &dpriv->dev_descriptor, sizeof (descriptor))) {
++  if (memcmp (&descriptor, &dpriv->dev_descriptor, sizeof (descriptor)) != 0) {
+     /* device descriptor changed. need to return not found. */
+     usbi_dbg (ctx, "darwin/reenumerate_device: device descriptor changed");
+     return LIBUSB_ERROR_NOT_FOUND;
+@@ -2131,7 +2131,7 @@ static int darwin_reenumerate_device (struct libusb_device_handle *dev_handle, b
+ 
+   for (i = 0 ; i < descriptor.bNumConfigurations ; ++i) {
+     (void) (*dpriv->device)->GetConfigurationDescriptorPtr (dpriv->device, i, &cached_configuration);
+-    if (memcmp (cached_configuration, cached_configurations + i, sizeof (cached_configurations[i]))) {
++    if (memcmp (cached_configuration, cached_configurations + i, sizeof (cached_configurations[i])) != 0) {
+       usbi_dbg (ctx, "darwin/reenumerate_device: configuration descriptor %d changed", i);
+       return LIBUSB_ERROR_NOT_FOUND;
+     }
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index b315ee36e..0e8200055 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11919
++#define LIBUSB_NANO 11920

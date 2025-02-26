@@ -1,0 +1,56 @@
+From fef78a96e37936f16c10c43c9a220683f7c2ff74 Mon Sep 17 00:00:00 2001
+From: Francis Hart <francis@kuvacode.com>
+Date: Wed, 20 Mar 2024 21:14:15 +0200
+Subject: [PATCH] windows: Restore behaviour of skipping malformed device GUIDs
+
+Previously when getting the device list, a malformed device GUID would
+be explicitly ignored and skipped, allowing the operation to complete. A
+recent change to winusb_get_device_list() in commit fdab67b accidentally
+changed this behaviour, so this scenario instead caused an early exit
+with error code LIBUSB_ERROR_NO_MEM.
+
+Closes #1475
+---
+ libusb/os/windows_winusb.c | 7 ++++---
+ libusb/version_nano.h      | 2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/libusb/os/windows_winusb.c b/libusb/os/windows_winusb.c
+index 926b9e88f..65d288fce 100644
+--- a/libusb/os/windows_winusb.c
++++ b/libusb/os/windows_winusb.c
+@@ -1572,7 +1572,6 @@ static int get_guid(struct libusb_context *ctx, char *dev_id, HDEVINFO *dev_info
+ 		usbi_warn(ctx, "device '%s' has malformed DeviceInterfaceGUID string '%s', skipping", dev_id, guid);
+ 		free(*if_guid);
+ 		*if_guid = NULL;
+-		err = LIBUSB_ERROR_NO_MEM;
+ 		goto exit;
+ 	}
+ 
+@@ -1767,7 +1766,7 @@ static int winusb_get_device_list(struct libusb_context *ctx, struct discovered_
+ 				}
+ 				// ...and to add the additional device interface GUIDs
+ 				r = get_guid(ctx, dev_id, dev_info, &dev_info_data, 0, &if_guid);
+-				if (r == LIBUSB_SUCCESS) {
++				if (r == LIBUSB_SUCCESS && if_guid != NULL) {
+ 					// Check if we've already seen this GUID
+ 					for (j = EXT_PASS; j < nb_guids; j++) {
+ 						if (memcmp(guid_list[j], if_guid, sizeof(*if_guid)) == 0)
+@@ -1796,7 +1795,9 @@ static int winusb_get_device_list(struct libusb_context *ctx, struct discovered_
+ 				} else if (r == LIBUSB_ERROR_NO_MEM) {
+ 					LOOP_BREAK(LIBUSB_ERROR_NO_MEM);
+ 				} else {
+-					usbi_warn(ctx, "unexpected error during getting DeviceInterfaceGUID for '%s'", dev_id);
++					if (r != LIBUSB_SUCCESS) {
++						usbi_warn(ctx, "unexpected error during getting DeviceInterfaceGUID for '%s'", dev_id);
++					}
+ 				}
+ 				break;
+ 			case HID_PASS:
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 8b5911c8c..d4f0bc925 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11898
++#define LIBUSB_NANO 11899

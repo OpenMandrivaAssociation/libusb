@@ -1,0 +1,33 @@
+From 233a8de6f9bfb47d767f9d3272532abfce71d05f Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Mon, 4 Mar 2024 10:55:23 +0100
+Subject: [PATCH] emscripten: Remove superfluous capability
+
+This is a common capability, not per backend.
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/os/emscripten_webusb.cpp | 2 +-
+ libusb/version_nano.h           | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libusb/os/emscripten_webusb.cpp b/libusb/os/emscripten_webusb.cpp
+index f19c1bd34..ced9ad820 100644
+--- a/libusb/os/emscripten_webusb.cpp
++++ b/libusb/os/emscripten_webusb.cpp
+@@ -844,7 +844,7 @@ int em_handle_transfer_completion(usbi_transfer* itransfer) {
+ #pragma clang diagnostic ignored "-Wmissing-field-initializers"
+ extern "C" const usbi_os_backend usbi_backend = {
+ 	.name = "Emscripten + WebUSB backend",
+-	.caps = LIBUSB_CAP_HAS_CAPABILITY,
++	.caps = 0,
+ 	.get_device_list = em_get_device_list,
+ 	.open = em_open,
+ 	.close = em_close,
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 28ed13508..36cb539a0 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11886
++#define LIBUSB_NANO 11887

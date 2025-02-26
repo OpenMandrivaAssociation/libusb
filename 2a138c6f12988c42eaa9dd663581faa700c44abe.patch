@@ -1,0 +1,133 @@
+From 2a138c6f12988c42eaa9dd663581faa700c44abe Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Sun, 26 May 2024 23:01:18 +0200
+Subject: [PATCH] Consistent use of C-style comment markers
+
+Except for the Windows, Emscripten, and Haiku backends we use C-style
+comments markers and not double-slash. Get rid of a few inconsistent
+// instances.
+
+Note the doxygen code examples have // comments because they are inside
+proper /* */ comments.
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/core.c            | 2 +-
+ libusb/descriptor.c      | 4 ++--
+ libusb/io.c              | 4 ++--
+ libusb/os/darwin_usb.c   | 2 +-
+ libusb/os/events_posix.c | 8 ++++----
+ libusb/os/sunos_usb.c    | 2 +-
+ libusb/version_nano.h    | 2 +-
+ 7 files changed, 12 insertions(+), 12 deletions(-)
+
+diff --git a/libusb/core.c b/libusb/core.c
+index 010201c5f..74617373d 100644
+--- a/libusb/core.c
++++ b/libusb/core.c
+@@ -954,7 +954,7 @@ int API_EXPORTED libusb_get_port_numbers(libusb_device *dev,
+ 	if (port_numbers_len <= 0)
+ 		return LIBUSB_ERROR_INVALID_PARAM;
+ 
+-	// HCDs can be listed as devices with port #0
++	/* HCDs can be listed as devices with port #0 */
+ 	while((dev) && (dev->port_number != 0)) {
+ 		if (--i < 0) {
+ 			usbi_warn(ctx, "port numbers array is too small");
+diff --git a/libusb/descriptor.c b/libusb/descriptor.c
+index 5718aaefd..493507f5a 100644
+--- a/libusb/descriptor.c
++++ b/libusb/descriptor.c
+@@ -1311,7 +1311,7 @@ static int parse_iad_array(struct libusb_context *ctx,
+ 		return LIBUSB_ERROR_IO;
+ 	}
+ 
+-	// First pass: Iterate through desc list, count number of IADs
++	/* First pass: Iterate through desc list, count number of IADs */
+ 	iad_array->length = 0;
+ 	while (consumed < size) {
+ 		parse_descriptor(buf, "bb", &header);
+@@ -1334,7 +1334,7 @@ static int parse_iad_array(struct libusb_context *ctx,
+ 
+ 		iad_array->iad = iad;
+ 
+-		// Second pass: Iterate through desc list, fill IAD structures
++		/* Second pass: Iterate through desc list, fill IAD structures */
+ 		consumed = 0;
+ 		i = 0;
+ 		while (consumed < size) {
+diff --git a/libusb/io.c b/libusb/io.c
+index 0b2aaf6c5..fa26ffa6b 100644
+--- a/libusb/io.c
++++ b/libusb/io.c
+@@ -2045,7 +2045,7 @@ int API_EXPORTED libusb_wait_for_event(libusb_context *ctx, struct timeval *tv)
+ 	return 0;
+ }
+ 
+-// NB: flying_transfers_lock must be held when calling this
++/* NB: flying_transfers_lock must be held when calling this */
+ static void handle_timeout(struct usbi_transfer *itransfer)
+ {
+ 	struct libusb_transfer *transfer =
+@@ -2061,7 +2061,7 @@ static void handle_timeout(struct usbi_transfer *itransfer)
+ 			"async cancel failed %d", r);
+ }
+ 
+-// NB: flying_transfers_lock must be held when calling this
++/* NB: flying_transfers_lock must be held when calling this */
+ static void handle_timeouts_locked(struct libusb_context *ctx)
+ {
+ 	struct timespec systime;
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index ae09db7b2..7bb496b65 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -1092,7 +1092,7 @@ static IOReturn darwin_request_descriptor (usb_device_t device, UInt8 desc, UInt
+ static enum libusb_error darwin_cache_device_descriptor (struct libusb_context *ctx, struct darwin_cached_device *dev) {
+   usb_device_t device = dev->device;
+   int retries = 1;
+-  long delay = 30000; // microseconds
++  long delay = 30000; /* microseconds */
+   int unsuspended = 0, try_unsuspend = 1, try_reconfigure = 1;
+   int is_open = 0;
+   IOReturn ret = 0, ret2;
+diff --git a/libusb/os/events_posix.c b/libusb/os/events_posix.c
+index 4056dae2e..bf984b91a 100644
+--- a/libusb/os/events_posix.c
++++ b/libusb/os/events_posix.c
+@@ -256,11 +256,11 @@ int usbi_wait_for_events(struct libusb_context *ctx,
+ 
+ 	usbi_dbg(ctx, "poll() %u fds with timeout in %dms", (unsigned int)nfds, timeout_ms);
+ #ifdef __EMSCRIPTEN__
+-	// Emscripten's poll doesn't actually block, so we need to use an out-of-band
+-	// waiting signal.
++	/* Emscripten's poll doesn't actually block, so we need to use an
++	 * out-of-band waiting signal. */
+ 	em_libusb_wait(&ctx->event.has_event, 0, timeout_ms);
+-	// Emscripten ignores timeout_ms, but set it to 0 for future-proofing in case
+-	// they ever implement real poll.
++	/* Emscripten ignores timeout_ms, but set it to 0 for future-proofing
++	 * in case they ever implement real poll. */
+ 	timeout_ms = 0;
+ #endif
+ 	num_ready = poll(fds, nfds, timeout_ms);
+diff --git a/libusb/os/sunos_usb.c b/libusb/os/sunos_usb.c
+index d7be7de70..761ca371e 100644
+--- a/libusb/os/sunos_usb.c
++++ b/libusb/os/sunos_usb.c
+@@ -171,7 +171,7 @@ sunos_usb_ioctl(struct libusb_device *dev, int cmd)
+ 
+ 	nvlist_alloc(&nvlist, NV_UNIQUE_NAME_TYPE, KM_NOSLEEP);
+ 	nvlist_add_int32(nvlist, "port", dev->port_number);
+-	//find the hub path
++	/* find the hub path */
+ 	snprintf(path_arg, sizeof(path_arg), "/devices%s:hubd", hubpath);
+ 	usbi_dbg(DEVICE_CTX(dev), "ioctl hub path: %s", path_arg);
+ 
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index f1cf8e489..0fa03f119 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11905
++#define LIBUSB_NANO 11906

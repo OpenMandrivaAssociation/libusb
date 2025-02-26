@@ -1,0 +1,70 @@
+From a18a964abaea2cd569c5c18f21b31126237f8a46 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Tue, 9 Apr 2024 13:40:22 -0400
+Subject: [PATCH] darwin: Fix multiplication overflow by better matching type
+ sizes
+
+These multiplication could indeed have overflowed, but now they are
+performed with a bigger type, matching the type they are ultimately
+stored in.
+
+Fixes all clang-tidy bugprone-implicit-widening-of-multiplication-result
+warnings
+
+References #1479
+---
+ .clang-tidy            | 1 -
+ examples/dpfp.c        | 2 +-
+ libusb/os/darwin_usb.c | 4 ++--
+ libusb/version_nano.h  | 2 +-
+ 4 files changed, 4 insertions(+), 5 deletions(-)
+
+diff --git a/.clang-tidy b/.clang-tidy
+index 27a8aa893..296498949 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -5,7 +5,6 @@ bugprone-*,\
+ -bugprone-assignment-in-if-condition,\
+ -bugprone-branch-clone,\
+ -bugprone-easily-swappable-parameters,\
+--bugprone-implicit-widening-of-multiplication-result,\
+ -bugprone-misplaced-widening-cast,\
+ -bugprone-narrowing-conversions,\
+ -bugprone-signed-char-misuse,\
+diff --git a/examples/dpfp.c b/examples/dpfp.c
+index 2949383a9..6a63cd9ee 100644
+--- a/examples/dpfp.c
++++ b/examples/dpfp.c
+@@ -388,7 +388,7 @@ static int save_to_file(unsigned char *data)
+ 		return -1;
+ 
+ 	fputs("P5 384 289 255 ", f);
+-	(void)fwrite(data + 64, 1, 384*289, f);
++	(void)fwrite(data + 64, 1, 384L*289L, f);
+ 	fclose(f);
+ 	printf("saved image to %s\n", filename);
+ 	return 0;
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index b75d70365..a43200042 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -2409,10 +2409,10 @@ static int submit_iso_transfer(struct usbi_transfer *itransfer) {
+ 
+   if (LIBUSB_SPEED_FULL == transfer->dev_handle->dev->speed)
+     /* Full speed */
+-    cInterface->frames[transfer->endpoint] = frame + (UInt32)transfer->num_iso_packets * (1U << (pipe_properties.interval - 1));
++    cInterface->frames[transfer->endpoint] = frame + (UInt64)transfer->num_iso_packets * (1UL << (pipe_properties.interval - 1));
+   else
+     /* High/super speed */
+-    cInterface->frames[transfer->endpoint] = frame + (UInt32)transfer->num_iso_packets * (1U << (pipe_properties.interval - 1)) / 8;
++    cInterface->frames[transfer->endpoint] = frame + (UInt64)transfer->num_iso_packets * (1UL << (pipe_properties.interval - 1)) / 8;
+ 
+   if (kresult != kIOReturnSuccess) {
+     usbi_err (TRANSFER_CTX (transfer), "isochronous transfer failed (dir: %s): %s", IS_XFERIN(transfer) ? "In" : "Out",
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 0e8200055..4023331a5 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11920
++#define LIBUSB_NANO 11921

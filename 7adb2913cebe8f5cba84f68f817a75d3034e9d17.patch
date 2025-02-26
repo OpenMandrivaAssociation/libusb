@@ -1,0 +1,103 @@
+From 7adb2913cebe8f5cba84f68f817a75d3034e9d17 Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Sun, 11 Aug 2024 13:33:03 +0200
+Subject: [PATCH] docs: Fix broken doxygen references
+
+Fixup of commit d7b796f1
+
+References #1549
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/descriptor.c   | 8 ++++----
+ libusb/libusb.h       | 8 ++++----
+ libusb/version_nano.h | 2 +-
+ 3 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/libusb/descriptor.c b/libusb/descriptor.c
+index 9b33b6b44..e8f958176 100644
+--- a/libusb/descriptor.c
++++ b/libusb/descriptor.c
+@@ -904,7 +904,7 @@ void API_EXPORTED libusb_free_bos_descriptor(struct libusb_bos_descriptor *bos)
+  *
+  * \param ctx the context to operate on, or NULL for the default context
+  * \param dev_cap Device Capability descriptor with a bDevCapabilityType of
+- * \ref libusb_capability_type::LIBUSB_BT_USB_2_0_EXTENSION
++ * \ref libusb_bos_type::LIBUSB_BT_USB_2_0_EXTENSION
+  * LIBUSB_BT_USB_2_0_EXTENSION
+  * \param usb_2_0_extension output location for the USB 2.0 Extension
+  * descriptor. Only valid if 0 was returned. Must be freed with
+@@ -962,7 +962,7 @@ void API_EXPORTED libusb_free_usb_2_0_extension_descriptor(
+  *
+  * \param ctx the context to operate on, or NULL for the default context
+  * \param dev_cap Device Capability descriptor with a bDevCapabilityType of
+- * \ref libusb_capability_type::LIBUSB_BT_SS_USB_DEVICE_CAPABILITY
++ * \ref libusb_bos_type::LIBUSB_BT_SS_USB_DEVICE_CAPABILITY
+  * LIBUSB_BT_SS_USB_DEVICE_CAPABILITY
+  * \param ss_usb_device_cap output location for the SuperSpeed USB Device
+  * Capability descriptor. Only valid if 0 was returned. Must be freed with
+@@ -1130,7 +1130,7 @@ void API_EXPORTED libusb_free_ss_usb_device_capability_descriptor(
+  *
+  * \param ctx the context to operate on, or NULL for the default context
+  * \param dev_cap Device Capability descriptor with a bDevCapabilityType of
+- * \ref libusb_capability_type::LIBUSB_BT_CONTAINER_ID
++ * \ref libusb_bos_type::LIBUSB_BT_CONTAINER_ID
+  * LIBUSB_BT_CONTAINER_ID
+  * \param container_id output location for the Container ID descriptor.
+  * Only valid if 0 was returned. Must be freed with
+@@ -1190,7 +1190,7 @@ void API_EXPORTED libusb_free_container_id_descriptor(
+  *
+  * \param ctx the context to operate on, or NULL for the default context
+  * \param dev_cap Device Capability descriptor with a bDevCapabilityType of
+- * \ref libusb_capability_type::LIBUSB_BT_PLATFORM_DESCRIPTOR
++ * \ref libusb_bos_type::LIBUSB_BT_PLATFORM_DESCRIPTOR
+  * LIBUSB_BT_PLATFORM_DESCRIPTOR
+  * \param platform_descriptor output location for the Platform descriptor.
+  * Only valid if 0 was returned. Must be freed with
+diff --git a/libusb/libusb.h b/libusb/libusb.h
+index 003d5ef4c..f0f15ca1d 100644
+--- a/libusb/libusb.h
++++ b/libusb/libusb.h
+@@ -932,7 +932,7 @@ struct libusb_usb_2_0_extension_descriptor {
+ 	uint8_t  bDescriptorType;
+ 
+ 	/** Capability type. Will have value
+-	 * \ref libusb_capability_type::LIBUSB_BT_USB_2_0_EXTENSION
++	 * \ref libusb_bos_type::LIBUSB_BT_USB_2_0_EXTENSION
+ 	 * LIBUSB_BT_USB_2_0_EXTENSION in this context. */
+ 	uint8_t  bDevCapabilityType;
+ 
+@@ -958,7 +958,7 @@ struct libusb_ss_usb_device_capability_descriptor {
+ 	uint8_t  bDescriptorType;
+ 
+ 	/** Capability type. Will have value
+-	 * \ref libusb_capability_type::LIBUSB_BT_SS_USB_DEVICE_CAPABILITY
++	 * \ref libusb_bos_type::LIBUSB_BT_SS_USB_DEVICE_CAPABILITY
+ 	 * LIBUSB_BT_SS_USB_DEVICE_CAPABILITY in this context. */
+ 	uint8_t  bDevCapabilityType;
+ 
+@@ -1094,7 +1094,7 @@ struct libusb_container_id_descriptor {
+ 	uint8_t  bDescriptorType;
+ 
+ 	/** Capability type. Will have value
+-	 * \ref libusb_capability_type::LIBUSB_BT_CONTAINER_ID
++	 * \ref libusb_bos_type::LIBUSB_BT_CONTAINER_ID
+ 	 * LIBUSB_BT_CONTAINER_ID in this context. */
+ 	uint8_t  bDevCapabilityType;
+ 
+@@ -1119,7 +1119,7 @@ struct libusb_platform_descriptor {
+ 	uint8_t  bDescriptorType;
+ 
+ 	/** Capability type. Will have value
+-	 * \ref libusb_capability_type::LIBUSB_BT_PLATFORM_DESCRIPTOR
++	 * \ref libusb_bos_type::LIBUSB_BT_PLATFORM_DESCRIPTOR
+ 	 * LIBUSB_BT_CONTAINER_ID in this context. */
+ 	uint8_t  bDevCapabilityType;
+ 
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 71d829681..4b6f35c5a 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11938
++#define LIBUSB_NANO 11939

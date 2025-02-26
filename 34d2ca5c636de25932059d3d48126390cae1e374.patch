@@ -1,0 +1,63 @@
+From 34d2ca5c636de25932059d3d48126390cae1e374 Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Sun, 26 May 2024 17:05:57 +0200
+Subject: [PATCH] xusb: Only retrieve BOS descriptor for bcdUSB 0x0201 or
+ higher
+
+The "Binary device Object Store" (BOS) descriptor was introduced with
+bcdUSB revision 0x0201.
+
+References #1492
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ examples/xusb.c       | 21 ++++++++++++---------
+ libusb/version_nano.h |  2 +-
+ 2 files changed, 13 insertions(+), 10 deletions(-)
+
+diff --git a/examples/xusb.c b/examples/xusb.c
+index 1ca905f14..c05f48a1a 100644
+--- a/examples/xusb.c
++++ b/examples/xusb.c
+@@ -854,7 +854,6 @@ static int test_device(uint16_t vid, uint16_t pid)
+ 	libusb_device_handle *handle;
+ 	libusb_device *dev;
+ 	uint8_t bus, port_path[8];
+-	struct libusb_bos_descriptor *bos_desc;
+ 	struct libusb_config_descriptor *conf_desc;
+ 	const struct libusb_endpoint_descriptor *endpoint;
+ 	int i, j, k, r;
+@@ -908,14 +907,18 @@ static int test_device(uint16_t vid, uint16_t pid)
+ 	string_index[1] = dev_desc.iProduct;
+ 	string_index[2] = dev_desc.iSerialNumber;
+ 
+-	printf("\nReading BOS descriptor: ");
+-	if (libusb_get_bos_descriptor(handle, &bos_desc) == LIBUSB_SUCCESS) {
+-		printf("%d caps\n", bos_desc->bNumDeviceCaps);
+-		for (i = 0; i < bos_desc->bNumDeviceCaps; i++)
+-			print_device_cap(bos_desc->dev_capability[i]);
+-		libusb_free_bos_descriptor(bos_desc);
+-	} else {
+-		printf("no descriptor\n");
++	if (dev_desc.bcdUSB >= 0x0201) {
++		struct libusb_bos_descriptor *bos_desc;
++
++		printf("\nReading BOS descriptor: ");
++		if (libusb_get_bos_descriptor(handle, &bos_desc) == LIBUSB_SUCCESS) {
++			printf("%d caps\n", bos_desc->bNumDeviceCaps);
++			for (i = 0; i < bos_desc->bNumDeviceCaps; i++)
++				print_device_cap(bos_desc->dev_capability[i]);
++			libusb_free_bos_descriptor(bos_desc);
++		} else {
++			printf("no descriptor\n");
++		}
+ 	}
+ 
+ 	printf("\nReading first configuration descriptor:\n");
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 2960c6d43..3a171685b 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11902
++#define LIBUSB_NANO 11903

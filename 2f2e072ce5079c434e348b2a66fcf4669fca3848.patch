@@ -1,0 +1,49 @@
+From 2f2e072ce5079c434e348b2a66fcf4669fca3848 Mon Sep 17 00:00:00 2001
+From: Adrien Destugues <pulkomandy@pulkomandy.tk>
+Date: Thu, 18 Apr 2024 22:13:30 +0200
+Subject: [PATCH] haiku: Use gcc atomic builtins to fix build
+
+Fixes #1387
+Closes #1482
+---
+ libusb/libusbi.h      | 12 ++++++++++++
+ libusb/version_nano.h |  2 +-
+ 2 files changed, 13 insertions(+), 1 deletion(-)
+
+diff --git a/libusb/libusbi.h b/libusb/libusbi.h
+index 3b0c6105c..6d19a930c 100644
+--- a/libusb/libusbi.h
++++ b/libusb/libusbi.h
+@@ -103,6 +103,17 @@ typedef volatile LONG usbi_atomic_t;
+ #define usbi_atomic_inc(a)	InterlockedIncrement((a))
+ #define usbi_atomic_dec(a)	InterlockedDecrement((a))
+ #else
++#if defined(__HAIKU__) && defined(__GNUC__) && !defined(__clang__)
++/* The Haiku port of libusb has some C++ files and GCC does not define
++ * anything in stdatomic.h when compiled in C++11 (only in C++23).
++ * This appears to be a bug in gcc's stdatomic.h, and should be fixed either
++ * in gcc or in Haiku. Until then, use the gcc builtins. */
++typedef long usbi_atomic_t;
++#define usbi_atomic_load(a)    __atomic_load_n((a), __ATOMIC_SEQ_CST)
++#define usbi_atomic_store(a, v)        __atomic_store_n((a), (v), __ATOMIC_SEQ_CST)
++#define usbi_atomic_inc(a)     __atomic_add_fetch((a), 1, __ATOMIC_SEQ_CST)
++#define usbi_atomic_dec(a)     __atomic_sub_fetch((a), 1, __ATOMIC_SEQ_CST)
++#else
+ #include <stdatomic.h>
+ typedef atomic_long usbi_atomic_t;
+ #define usbi_atomic_load(a)	atomic_load((a))
+@@ -110,6 +121,7 @@ typedef atomic_long usbi_atomic_t;
+ #define usbi_atomic_inc(a)	(atomic_fetch_add((a), 1) + 1)
+ #define usbi_atomic_dec(a)	(atomic_fetch_add((a), -1) - 1)
+ #endif
++#endif
+ 
+ /* Internal abstractions for event handling and thread synchronization */
+ #if defined(PLATFORM_POSIX)
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index a859d2792..3673ed7dd 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11893
++#define LIBUSB_NANO 11894

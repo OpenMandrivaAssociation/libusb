@@ -1,0 +1,46 @@
+From a7e471dd485bff853ca984c2f32d9b508fe913b6 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Tue, 9 Apr 2024 13:38:24 -0400
+Subject: [PATCH] examples/xusb: Make some parameters const where possible
+
+Fixes all clang-tidy readability-non-const-parameter warnings
+
+References #1479
+---
+ .clang-tidy           | 1 -
+ examples/xusb.c       | 2 +-
+ libusb/version_nano.h | 2 +-
+ 3 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/.clang-tidy b/.clang-tidy
+index 741ce8e39..4e4e3b32b 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -36,7 +36,6 @@ readability-*,\
+ -readability-inconsistent-declaration-parameter-name,\
+ -readability-isolate-declaration,\
+ -readability-magic-numbers,\
+--readability-non-const-parameter,\
+ -readability-uppercase-literal-suffix,\
+ -readability-misleading-indentation,\
+ "
+diff --git a/examples/xusb.c b/examples/xusb.c
+index effa26616..ce44212d0 100644
+--- a/examples/xusb.c
++++ b/examples/xusb.c
+@@ -559,7 +559,7 @@ static int test_mass_storage(libusb_device_handle *handle, uint8_t endpoint_in,
+ }
+ 
+ // HID
+-static int get_hid_record_size(uint8_t *hid_report_descriptor, int size, int type)
++static int get_hid_record_size(const uint8_t *hid_report_descriptor, int size, int type)
+ {
+ 	uint8_t i, j = 0;
+ 	uint8_t offset;
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 970662747..f08f1bf78 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11916
++#define LIBUSB_NANO 11917

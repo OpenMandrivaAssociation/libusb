@@ -1,0 +1,73 @@
+From 9ffdb7fe6ed8f1f303e851a1088fc05a3bae713d Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Tue, 9 Apr 2024 13:28:25 -0400
+Subject: [PATCH] examples/fxload: Eliminate all reserved C identifiers
+ (leading underscores)
+
+The C langugage reserves various identifiers for itself that user code
+must not use.
+
+Fixes all clang-tidy bugprone-reserved-identifier warnings
+
+Also, 4 of 5 file extension tests were case insensitive, and 1 was not.
+Changed it to be insensitive too.
+
+References #1479
+---
+ .clang-tidy           |  1 -
+ examples/fxload.c     | 12 +++++++-----
+ libusb/version_nano.h |  2 +-
+ 3 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/.clang-tidy b/.clang-tidy
+index 88c95071f..ed3733a9a 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -9,7 +9,6 @@ bugprone-*,\
+ -bugprone-macro-parentheses,\
+ -bugprone-misplaced-widening-cast,\
+ -bugprone-narrowing-conversions,\
+--bugprone-reserved-identifier,\
+ -bugprone-signed-char-misuse,\
+ -bugprone-suspicious-string-compare,\
+ -bugprone-switch-missing-default-case,\
+diff --git a/examples/fxload.c b/examples/fxload.c
+index 252608338..0e5fdf426 100644
+--- a/examples/fxload.c
++++ b/examples/fxload.c
+@@ -38,7 +38,9 @@
+ #include <syslog.h>
+ static bool dosyslog = false;
+ #include <strings.h>
+-#define _stricmp strcasecmp
++#define libusb_strcasecmp strcasecmp
++#else
++#define libusb_strcasecmp _stricmp
+ #endif
+ 
+ #ifndef FXLOAD_VERSION
+@@ -263,13 +265,13 @@ int main(int argc, char*argv[])
+ 	for (i=0; i<ARRAYSIZE(path); i++) {
+ 		if (path[i] != NULL) {
+ 			ext = path[i] + strlen(path[i]) - 4;
+-			if ((_stricmp(ext, ".hex") == 0) || (strcmp(ext, ".ihx") == 0))
++			if ((libusb_strcasecmp(ext, ".hex") == 0) || (libusb_strcasecmp(ext, ".ihx") == 0))
+ 				img_type[i] = IMG_TYPE_HEX;
+-			else if (_stricmp(ext, ".iic") == 0)
++			else if (libusb_strcasecmp(ext, ".iic") == 0)
+ 				img_type[i] = IMG_TYPE_IIC;
+-			else if (_stricmp(ext, ".bix") == 0)
++			else if (libusb_strcasecmp(ext, ".bix") == 0)
+ 				img_type[i] = IMG_TYPE_BIX;
+-			else if (_stricmp(ext, ".img") == 0)
++			else if (libusb_strcasecmp(ext, ".img") == 0)
+ 				img_type[i] = IMG_TYPE_IMG;
+ 			else {
+ 				logerror("%s is not a recognized image type\n", path[i]);
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 2453eeb73..d1a8342bf 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11914
++#define LIBUSB_NANO 11915

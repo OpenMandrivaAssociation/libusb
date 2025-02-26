@@ -1,0 +1,46 @@
+From 6c0ae1ab456da49e7805115e77ce0428ace4ea41 Mon Sep 17 00:00:00 2001
+From: Sylvain Fasel <sylvain@sonatique.net>
+Date: Sun, 4 Feb 2024 23:48:26 +0100
+Subject: [PATCH] hotplug_exit: Mutex protection of context device list while
+ cleaning it
+
+This prevents concurrent access to the list by the event background
+thread, which could still be processing a previous hotplug event and
+having to modify the list.
+
+Fixes #1366
+Fixes #1445
+Closes #1452
+References #1406
+---
+ libusb/hotplug.c      | 2 ++
+ libusb/version_nano.h | 2 +-
+ 2 files changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/libusb/hotplug.c b/libusb/hotplug.c
+index 02d332d24..026e11d5a 100644
+--- a/libusb/hotplug.c
++++ b/libusb/hotplug.c
+@@ -214,6 +214,7 @@ void usbi_hotplug_exit(struct libusb_context *ctx)
+ 		free(msg);
+ 	}
+ 
++	usbi_mutex_lock(&ctx->usb_devs_lock); /* hotplug thread might still be processing an already triggered event, possibly accessing this list as well */
+ 	/* free all discovered devices */
+ 	for_each_device_safe(ctx, dev, next_dev) {
+ 		/* remove the device from the usb_devs list only if there are no
+@@ -227,6 +228,7 @@ void usbi_hotplug_exit(struct libusb_context *ctx)
+ 
+ 		libusb_unref_device(dev);
+ 	}
++	usbi_mutex_unlock(&ctx->usb_devs_lock);
+ 
+ 	usbi_mutex_destroy(&ctx->hotplug_cbs_lock);
+ }
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index a6dfedd5a..28ed13508 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11885
++#define LIBUSB_NANO 11886

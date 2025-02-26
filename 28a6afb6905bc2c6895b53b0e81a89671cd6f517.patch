@@ -1,0 +1,74 @@
+From 28a6afb6905bc2c6895b53b0e81a89671cd6f517 Mon Sep 17 00:00:00 2001
+From: Fabien Sanglard <fabiensanglard.net@gmail.com>
+Date: Thu, 7 Nov 2024 22:03:52 -0800
+Subject: [PATCH] docs: Document internal_ssplus_capability_descriptor
+
+Also include SSP documentation fixups of commit f00f06e9
+that had introduced Doxygen errors.
+
+Closes #1545
+---
+ libusb/descriptor.c   | 13 +++++++++++++
+ libusb/libusb.h       |  4 ++--
+ libusb/version_nano.h |  2 +-
+ 3 files changed, 16 insertions(+), 3 deletions(-)
+
+diff --git a/libusb/descriptor.c b/libusb/descriptor.c
+index 2ab1d47b1..790f9ff71 100644
+--- a/libusb/descriptor.c
++++ b/libusb/descriptor.c
+@@ -1009,12 +1009,25 @@ int API_EXPORTED libusb_get_ss_usb_device_capability_descriptor(
+    descriptor according to section 9.6.2.5 of the USB 3.1 specification.
+    We don't expose it. */
+ struct internal_ssplus_capability_descriptor {
++	/** The length of the descriptor. Must be equal to LIBUSB_BT_SSPLUS_USB_DEVICE_CAPABILITY_SIZE */
+ 	uint8_t  bLength;
++
++	/** The type of the descriptor */
+ 	uint8_t  bDescriptorType;
++
++	/** Must be equal to LIBUSB_BT_SUPERSPEED_PLUS_CAPABILITY */
+ 	uint8_t  bDevCapabilityType;
++
++	/** Unused */
+ 	uint8_t  bReserved;
++
++	/** Contains the number of SublinkSpeedIDs */
+ 	uint32_t bmAttributes;
++
++	/** Contains the ssid, minRxLaneCount, and minTxLaneCount */
+ 	uint16_t wFunctionalitySupport;
++
++	/** Unused */
+ 	uint16_t wReserved;
+ };
+ 
+diff --git a/libusb/libusb.h b/libusb/libusb.h
+index cd25a4296..003d5ef4c 100644
+--- a/libusb/libusb.h
++++ b/libusb/libusb.h
+@@ -566,7 +566,7 @@ enum libusb_bos_type {
+ 	/** Platform descriptor */
+ 	LIBUSB_BT_PLATFORM_DESCRIPTOR = 0x05,
+ 
+-	/* SuperSpeedPlus device capability */
++	/** SuperSpeedPlus device capability */
+ 	LIBUSB_BT_SUPERSPEED_PLUS_CAPABILITY = 0x0A,
+ };
+ 
+@@ -1075,7 +1075,7 @@ struct libusb_ssplus_usb_device_capability_descriptor {
+ 	/** This field indicates the minimum transmit lane count*/
+ 	uint8_t minTxLaneCount;
+ 
+-	/** num attrtibutes=  \ref libusb_ssplus_usb_device_capability_descriptor.numSublinkSpeedAttributes= */
++	/** Array size is \ref libusb_ssplus_usb_device_capability_descriptor.numSublinkSpeedAttributes */
+ 	struct libusb_ssplus_sublink_attribute sublinkSpeedAttributes[];
+ };
+ 
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 600fb93e5..b3a364262 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11936
++#define LIBUSB_NANO 11937

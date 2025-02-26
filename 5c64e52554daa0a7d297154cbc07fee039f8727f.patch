@@ -1,0 +1,55 @@
+From 5c64e52554daa0a7d297154cbc07fee039f8727f Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Wed, 14 Feb 2024 22:52:57 +0100
+Subject: [PATCH] sunos: Fix typos breaking build
+
+Fixup of commit 66e63d6
+
+Fixes #1465
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/os/sunos_usb.c | 8 ++++----
+ libusb/version_nano.h | 2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/libusb/os/sunos_usb.c b/libusb/os/sunos_usb.c
+index 6c8250c60..d7be7de70 100644
+--- a/libusb/os/sunos_usb.c
++++ b/libusb/os/sunos_usb.c
+@@ -86,7 +86,7 @@ static int sunos_get_link(di_devlink_t devlink, void *arg)
+ 	const char *p;
+ 	const char *q;
+ 
+-	if (larg->path) {
++	if (link_arg->path) {
+ 		char *content = (char *)di_devlink_content(devlink);
+ 		char *start = strstr(content, "/devices/");
+ 		start += strlen("/devices");
+@@ -94,8 +94,8 @@ static int sunos_get_link(di_devlink_t devlink, void *arg)
+ 
+ 		/* line content must have minor node */
+ 		if (start == NULL ||
+-		    strncmp(start, larg->path, larg->len) != 0 ||
+-		    start[larg->len] != ':')
++		    strncmp(start, link_arg->path, link_arg->len) != 0 ||
++		    start[link_arg->len] != ':')
+ 			return (DI_WALK_CONTINUE);
+ 	}
+ 
+@@ -103,7 +103,7 @@ static int sunos_get_link(di_devlink_t devlink, void *arg)
+ 	q = strrchr(p, '/');
+ 	usbi_dbg(NULL, "%s", q);
+ 
+-	*(larg->linkpp) = strndup(p, strlen(p) - strlen(q));
++	*(link_arg->linkpp) = strndup(p, strlen(p) - strlen(q));
+ 
+ 	return (DI_WALK_TERMINATE);
+ }
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index a6165f334..b22809baf 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11882
++#define LIBUSB_NANO 11883

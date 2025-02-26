@@ -1,0 +1,40 @@
+From de1398db35890408b2f465bc135c04b816ef2f19 Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Sun, 26 May 2024 22:29:57 +0200
+Subject: [PATCH] windows: Downgrade get_guid DeviceInterfaceGUID message to
+ debug level
+
+Ideally it should be a warning only for composite devices but it is
+difficult to discern that case. The message is too invasive and
+confusing for the non-composite case, so make it debug instead.
+
+Follow-up of commit f9ae36b
+
+Closes #1394
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/os/windows_winusb.c | 2 +-
+ libusb/version_nano.h      | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/libusb/os/windows_winusb.c b/libusb/os/windows_winusb.c
+index 65d288fce..a30f3def9 100644
+--- a/libusb/os/windows_winusb.c
++++ b/libusb/os/windows_winusb.c
+@@ -1492,7 +1492,7 @@ static int get_guid(struct libusb_context *ctx, char *dev_id, HDEVINFO *dev_info
+ 			// The GUID was read successfully
+ 			break;
+ 		} else if (s == ERROR_FILE_NOT_FOUND) {
+-			usbi_info(ctx, "no DeviceInterfaceGUID registered for '%s'", dev_id);
++			usbi_dbg(ctx, "no DeviceInterfaceGUID registered for '%s'", dev_id);
+ 			err = LIBUSB_ERROR_ACCESS;
+ 			goto exit;
+ 		} else if (s == ERROR_MORE_DATA) {
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 56c853891..f1cf8e489 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11904
++#define LIBUSB_NANO 11905

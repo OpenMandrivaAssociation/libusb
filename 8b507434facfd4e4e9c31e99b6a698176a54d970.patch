@@ -1,0 +1,67 @@
+From 8b507434facfd4e4e9c31e99b6a698176a54d970 Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Sun, 12 May 2024 16:13:59 +0200
+Subject: [PATCH] linux: Fix type of open() flags argument
+
+The second argument to open() is an int carrying flags (including
+"access modes"). A third, optional argument has type mode_t, carrying
+"file mode bits" for file permissions.
+
+Also rename the variable to access_mode to make it more clear.
+
+The type mismatch was caught by building with -Wconversion.
+
+References #1497
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/os/linux_usbfs.c | 8 ++++----
+ libusb/version_nano.h   | 2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/libusb/os/linux_usbfs.c b/libusb/os/linux_usbfs.c
+index 25ee02ea0..555607eac 100644
+--- a/libusb/os/linux_usbfs.c
++++ b/libusb/os/linux_usbfs.c
+@@ -182,7 +182,7 @@ static int dev_has_config0(struct libusb_device *dev)
+ 	return 0;
+ }
+ 
+-static int get_usbfs_fd(struct libusb_device *dev, mode_t mode, int silent)
++static int get_usbfs_fd(struct libusb_device *dev, int access_mode, int silent)
+ {
+ 	struct libusb_context *ctx = DEVICE_CTX(dev);
+ 	char path[24];
+@@ -195,7 +195,7 @@ static int get_usbfs_fd(struct libusb_device *dev, mode_t mode, int silent)
+ 		snprintf(path, sizeof(path), USB_DEVTMPFS_PATH "/%03u/%03u",
+ 			dev->bus_number, dev->device_address);
+ 
+-	fd = open(path, mode | O_CLOEXEC);
++	fd = open(path, access_mode | O_CLOEXEC);
+ 	if (fd != -1)
+ 		return fd; /* Success */
+ 
+@@ -209,14 +209,14 @@ static int get_usbfs_fd(struct libusb_device *dev, mode_t mode, int silent)
+ 		/* Wait 10ms for USB device path creation.*/
+ 		nanosleep(&delay_ts, NULL);
+ 
+-		fd = open(path, mode | O_CLOEXEC);
++		fd = open(path, access_mode | O_CLOEXEC);
+ 		if (fd != -1)
+ 			return fd; /* Success */
+ 	}
+ 
+ 	if (!silent) {
+ 		usbi_err(ctx, "libusb couldn't open USB device %s, errno=%d", path, errno);
+-		if (errno == EACCES && mode == O_RDWR)
++		if (errno == EACCES && access_mode == O_RDWR)
+ 			usbi_err(ctx, "libusb requires write access to USB device nodes");
+ 	}
+ 
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index c23d11740..8fd5c667f 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11900
++#define LIBUSB_NANO 11901

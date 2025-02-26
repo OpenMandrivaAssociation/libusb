@@ -1,0 +1,443 @@
+From a07ecfe02aeea6861bbefebd9ab064eae7e15b51 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Sat, 30 Dec 2023 21:38:43 -0500
+Subject: [PATCH] Fix most warnings about implicit sign conversion
+
+- Sometimes just change a type to match where it's coming from
+
+- Sometimes add an explicit cast (but only if it's guaranteed correct,
+  like a previous check that a signed value is positive before casting to
+  unsigned)
+
+- For libusb_bulk_transfer() add an assert to be certain that the signed
+  return value is never negative.
+  Update API documentation to underline this fact.
+  Add similar assert in usbi_handle_transfer_completion().
+
+- darwin: For parsing OS version, change scanf to use %u instead of %i
+
+- xusb: Add additional range checks before casting
+
+- xusb: Reverse some backwards count and size arguments to calloc, not
+  that it really matters
+
+Closes #1414
+---
+ examples/xusb.c        | 34 +++++++++++++++++++---------------
+ libusb/core.c          |  6 +++---
+ libusb/descriptor.c    |  8 ++++----
+ libusb/io.c            |  1 +
+ libusb/os/darwin_usb.c | 38 ++++++++++++++++++++------------------
+ libusb/sync.c          | 13 ++++++++-----
+ libusb/version_nano.h  |  2 +-
+ tests/macos.c          |  4 ++--
+ 8 files changed, 58 insertions(+), 48 deletions(-)
+
+diff --git a/examples/xusb.c b/examples/xusb.c
+index 7e734c34e..502ff1483 100644
+--- a/examples/xusb.c
++++ b/examples/xusb.c
+@@ -461,7 +461,7 @@ static int test_mass_storage(libusb_device_handle *handle, uint8_t endpoint_in,
+ 	double device_size;
+ 	uint8_t cdb[16];	// SCSI Command Descriptor Block
+ 	uint8_t buffer[64];
+-	char vid[9], pid[9], rev[5];
++	unsigned char vid[9], pid[9], rev[5];
+ 	unsigned char *data;
+ 	FILE *fd;
+ 
+@@ -560,7 +560,7 @@ static int get_hid_record_size(uint8_t *hid_report_descriptor, int size, int typ
+ 	uint8_t i, j = 0;
+ 	uint8_t offset;
+ 	int record_size[3] = {0, 0, 0};
+-	int nb_bits = 0, nb_items = 0;
++	unsigned int nb_bits = 0, nb_items = 0;
+ 	bool found_record_marker;
+ 
+ 	found_record_marker = false;
+@@ -575,7 +575,7 @@ static int get_hid_record_size(uint8_t *hid_report_descriptor, int size, int typ
+ 		case 0x94:	// count
+ 			nb_items = 0;
+ 			for (j=1; j<offset; j++) {
+-				nb_items = ((uint32_t)hid_report_descriptor[i+j]) << (8*(j-1));
++				nb_items = ((unsigned int)hid_report_descriptor[i+j]) << (8U*(j-1U));
+ 			}
+ 			break;
+ 		case 0x80:	// input
+@@ -623,9 +623,9 @@ static int test_hid(libusb_device_handle *handle, uint8_t endpoint_in)
+ 		printf("   Failed\n");
+ 		return -1;
+ 	}
+-	display_buffer_hex(hid_report_descriptor, descriptor_size);
++	display_buffer_hex(hid_report_descriptor, (unsigned int)descriptor_size);
+ 	if ((binary_dump) && ((fd = fopen(binary_name, "w")) != NULL)) {
+-		if (fwrite(hid_report_descriptor, 1, descriptor_size, fd) != (size_t)descriptor_size) {
++		if (fwrite(hid_report_descriptor, 1, (size_t)descriptor_size, fd) != (size_t)descriptor_size) {
+ 			printf("   Error writing descriptor to file\n");
+ 		}
+ 		fclose(fd);
+@@ -634,8 +634,10 @@ static int test_hid(libusb_device_handle *handle, uint8_t endpoint_in)
+ 	size = get_hid_record_size(hid_report_descriptor, descriptor_size, HID_REPORT_TYPE_FEATURE);
+ 	if (size <= 0) {
+ 		printf("\nSkipping Feature Report readout (None detected)\n");
++	} else if (size > UINT16_MAX) {
++		printf("\nSkipping Feature Report readout (bigger than UINT16_MAX)\n");
+ 	} else {
+-		report_buffer = (uint8_t*) calloc(size, 1);
++		report_buffer = (uint8_t*) calloc(1, (size_t)size);
+ 		if (report_buffer == NULL) {
+ 			return -1;
+ 		}
+@@ -644,7 +646,7 @@ static int test_hid(libusb_device_handle *handle, uint8_t endpoint_in)
+ 		r = libusb_control_transfer(handle, LIBUSB_ENDPOINT_IN|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE,
+ 			HID_GET_REPORT, (HID_REPORT_TYPE_FEATURE<<8)|0, 0, report_buffer, (uint16_t)size, 5000);
+ 		if (r >= 0) {
+-			display_buffer_hex(report_buffer, size);
++			display_buffer_hex(report_buffer, (unsigned int)size);
+ 		} else {
+ 			switch(r) {
+ 			case LIBUSB_ERROR_NOT_FOUND:
+@@ -665,8 +667,10 @@ static int test_hid(libusb_device_handle *handle, uint8_t endpoint_in)
+ 	size = get_hid_record_size(hid_report_descriptor, descriptor_size, HID_REPORT_TYPE_INPUT);
+ 	if (size <= 0) {
+ 		printf("\nSkipping Input Report readout (None detected)\n");
++	} else if (size > UINT16_MAX) {
++		printf("\nSkipping Input Report readout (bigger than UINT16_MAX)\n");
+ 	} else {
+-		report_buffer = (uint8_t*) calloc(size, 1);
++		report_buffer = (uint8_t*) calloc(1, (size_t)size);
+ 		if (report_buffer == NULL) {
+ 			return -1;
+ 		}
+@@ -675,7 +679,7 @@ static int test_hid(libusb_device_handle *handle, uint8_t endpoint_in)
+ 		r = libusb_control_transfer(handle, LIBUSB_ENDPOINT_IN|LIBUSB_REQUEST_TYPE_CLASS|LIBUSB_RECIPIENT_INTERFACE,
+ 			HID_GET_REPORT, (HID_REPORT_TYPE_INPUT<<8)|0x00, 0, report_buffer, (uint16_t)size, 5000);
+ 		if (r >= 0) {
+-			display_buffer_hex(report_buffer, size);
++			display_buffer_hex(report_buffer, (unsigned int)size);
+ 		} else {
+ 			switch(r) {
+ 			case LIBUSB_ERROR_TIMEOUT:
+@@ -695,7 +699,7 @@ static int test_hid(libusb_device_handle *handle, uint8_t endpoint_in)
+ 		printf("\nTesting interrupt read using endpoint %02X...\n", endpoint_in);
+ 		r = libusb_interrupt_transfer(handle, endpoint_in, report_buffer, size, &size, 5000);
+ 		if (r >= 0) {
+-			display_buffer_hex(report_buffer, size);
++			display_buffer_hex(report_buffer, (unsigned int)size);
+ 		} else {
+ 			printf("   %s\n", libusb_strerror((enum libusb_error)r));
+ 		}
+@@ -753,7 +757,7 @@ static void read_ms_winsub_feature_descriptors(libusb_device_handle *handle, uin
+ 			perr("   Failed: %s", libusb_strerror((enum libusb_error)r));
+ 			return;
+ 		} else {
+-			display_buffer_hex(os_desc, r);
++			display_buffer_hex(os_desc, (unsigned int)r);
+ 		}
+ 	}
+ }
+@@ -824,7 +828,7 @@ static int test_device(uint16_t vid, uint16_t pid)
+ 	struct libusb_device_descriptor dev_desc;
+ 	const char* const speed_name[6] = { "Unknown", "1.5 Mbit/s (USB LowSpeed)", "12 Mbit/s (USB FullSpeed)",
+ 		"480 Mbit/s (USB HighSpeed)", "5000 Mbit/s (USB SuperSpeed)", "10000 Mbit/s (USB SuperSpeedPlus)" };
+-	char string[128];
++	unsigned char string[128];
+ 	uint8_t string_index[3];	// indexes of the string descriptors
+ 	uint8_t endpoint_in = 0, endpoint_out = 0;	// default IN and OUT endpoints
+ 
+@@ -960,13 +964,13 @@ static int test_device(uint16_t vid, uint16_t pid)
+ 		if (string_index[i] == 0) {
+ 			continue;
+ 		}
+-		if (libusb_get_string_descriptor_ascii(handle, string_index[i], (unsigned char*)string, sizeof(string)) > 0) {
++		if (libusb_get_string_descriptor_ascii(handle, string_index[i], string, sizeof(string)) > 0) {
+ 			printf("   String (0x%02X): \"%s\"\n", string_index[i], string);
+ 		}
+ 	}
+ 
+ 	printf("\nReading OS string descriptor:");
+-	r = libusb_get_string_descriptor(handle, MS_OS_DESC_STRING_INDEX, 0, (unsigned char*)string, MS_OS_DESC_STRING_LENGTH);
++	r = libusb_get_string_descriptor(handle, MS_OS_DESC_STRING_INDEX, 0, string, MS_OS_DESC_STRING_LENGTH);
+ 	if (r == MS_OS_DESC_STRING_LENGTH && memcmp(ms_os_desc_string, string, sizeof(ms_os_desc_string)) == 0) {
+ 		// If this is a Microsoft OS String Descriptor,
+ 		// attempt to read the WinUSB extended Feature Descriptors
+@@ -991,7 +995,7 @@ static int test_device(uint16_t vid, uint16_t pid)
+ 			printf("          bFunctionSubClass: %02X\n", iad->bFunctionSubClass);
+ 			printf("          bFunctionProtocol: %02X\n", iad->bFunctionProtocol);
+ 			if (iad->iFunction) {
+-				if (libusb_get_string_descriptor_ascii(handle, iad->iFunction, (unsigned char*)string, sizeof(string)) > 0)
++				if (libusb_get_string_descriptor_ascii(handle, iad->iFunction, string, sizeof(string)) > 0)
+ 					printf("                  iFunction: %u (%s)\n", iad->iFunction, string);
+ 				else
+ 					printf("                  iFunction: %u (libusb_get_string_descriptor_ascii failed!)\n", iad->iFunction);
+diff --git a/libusb/core.c b/libusb/core.c
+index ffe33b775..bdfc77cf7 100644
+--- a/libusb/core.c
++++ b/libusb/core.c
+@@ -964,7 +964,7 @@ int API_EXPORTED libusb_get_port_numbers(libusb_device *dev,
+ 		dev = dev->parent_dev;
+ 	}
+ 	if (i < port_numbers_len)
+-		memmove(port_numbers, &port_numbers[i], port_numbers_len - i);
++		memmove(port_numbers, &port_numbers[i], (size_t)(port_numbers_len - i));
+ 	return port_numbers_len - i;
+ }
+ 
+@@ -1014,7 +1014,7 @@ uint8_t API_EXPORTED libusb_get_device_address(libusb_device *dev)
+  */
+ int API_EXPORTED libusb_get_device_speed(libusb_device *dev)
+ {
+-	return dev->speed;
++	return (int)(dev->speed);
+ }
+ 
+ static const struct libusb_endpoint_descriptor *find_endpoint(
+@@ -2456,7 +2456,7 @@ int API_EXPORTED libusb_init_context(libusb_context **ctx, const struct libusb_i
+ 		_ctx->debug = get_env_debug_level();
+ 		_ctx->debug_fixed = 1;
+ 	} else if (default_context_options[LIBUSB_OPTION_LOG_LEVEL].is_set) {
+-		_ctx->debug = default_context_options[LIBUSB_OPTION_LOG_LEVEL].arg.ival;
++		_ctx->debug = (enum libusb_log_level)default_context_options[LIBUSB_OPTION_LOG_LEVEL].arg.ival;
+ 	}
+ #endif
+ 
+diff --git a/libusb/descriptor.c b/libusb/descriptor.c
+index 4623ad1e3..84055fe38 100644
+--- a/libusb/descriptor.c
++++ b/libusb/descriptor.c
+@@ -156,7 +156,7 @@ static int parse_endpoint(struct libusb_context *ctx,
+ 	if (!extra)
+ 		return LIBUSB_ERROR_NO_MEM;
+ 
+-	memcpy(extra, begin, len);
++	memcpy(extra, begin, (size_t)len);
+ 	endpoint->extra = extra;
+ 	endpoint->extra_length = len;
+ 
+@@ -286,7 +286,7 @@ static int parse_interface(libusb_context *ctx,
+ 				goto err;
+ 			}
+ 
+-			memcpy(extra, begin, len);
++			memcpy(extra, begin, (size_t)len);
+ 			ifp->extra = extra;
+ 			ifp->extra_length = len;
+ 		}
+@@ -431,7 +431,7 @@ static int parse_configuration(struct libusb_context *ctx,
+ 				goto err;
+ 			}
+ 
+-			memcpy(extra + config->extra_length, begin, len);
++			memcpy(extra + config->extra_length, begin, (size_t)len);
+ 			config->extra = extra;
+ 			config->extra_length += len;
+ 		}
+@@ -1241,7 +1241,7 @@ static int parse_iad_array(struct libusb_context *ctx,
+ 
+ 	iad_array->iad = NULL;
+ 	if (iad_array->length > 0) {
+-		iad = calloc(iad_array->length, sizeof(*iad));
++		iad = calloc((size_t)iad_array->length, sizeof(*iad));
+ 		if (!iad)
+ 			return LIBUSB_ERROR_NO_MEM;
+ 
+diff --git a/libusb/io.c b/libusb/io.c
+index ab84ba620..0b2aaf6c5 100644
+--- a/libusb/io.c
++++ b/libusb/io.c
+@@ -1714,6 +1714,7 @@ int usbi_handle_transfer_completion(struct usbi_transfer *itransfer,
+ 	flags = transfer->flags;
+ 	transfer->status = status;
+ 	transfer->actual_length = itransfer->transferred;
++	assert(transfer->actual_length >= 0);
+ 	usbi_dbg(ctx, "transfer %p has callback %p",
+ 		 (void *) transfer, transfer->callback);
+ 	if (transfer->callback) {
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index c0963e09b..98d96dcff 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -40,7 +40,7 @@
+ 
+ /* Default timeout to 10s for reenumerate. This is needed because USBDeviceReEnumerate
+  * does not return error status on macOS. */
+-#define DARWIN_REENUMERATE_TIMEOUT_US (10 * USEC_PER_SEC)
++#define DARWIN_REENUMERATE_TIMEOUT_US (10ULL * USEC_PER_SEC)
+ 
+ #include <AvailabilityMacros.h>
+ #if MAC_OS_X_VERSION_MIN_REQUIRED >= 1060 && MAC_OS_X_VERSION_MIN_REQUIRED < 101200
+@@ -70,8 +70,8 @@ static struct list_head darwin_cached_devices;
+ static const char *darwin_device_class = "IOUSBDevice";
+ 
+ uint32_t libusb_testonly_fake_running_version __attribute__ ((visibility ("hidden")));
+-int libusb_testonly_using_running_interface_version __attribute__ ((visibility ("hidden")));
+-int libusb_testonly_using_running_device_version __attribute__ ((visibility ("hidden")));
++uint32_t libusb_testonly_using_running_interface_version __attribute__ ((visibility ("hidden")));
++uint32_t libusb_testonly_using_running_device_version __attribute__ ((visibility ("hidden")));
+ bool libusb_testonly_clear_running_version_cache __attribute__ ((visibility ("hidden")));
+ 
+ #define DARWIN_CACHED_DEVICE(a) (((struct darwin_device_priv *)usbi_get_device_priv((a)))->dev)
+@@ -173,7 +173,7 @@ static CFUUIDRef get_interface_interface_id(void) {
+   return get_interface_interface()->interface_id;
+ }
+ 
+-static int get_interface_interface_version(void) {
++static uint32_t get_interface_interface_version(void) {
+   return get_interface_interface()->version;
+ }
+ 
+@@ -244,7 +244,7 @@ static CFUUIDRef get_device_interface_id(void) {
+   return get_device_interface()->interface_id;
+ }
+ 
+-static int get_device_interface_version(void) {
++static uint32_t get_device_interface_version(void) {
+   return get_device_interface()->version;
+ }
+ 
+@@ -370,11 +370,11 @@ uint32_t get_running_version(void) {
+    * it provides the exact macOS version instead of the approximate version (as below). */
+   ret = sysctlbyname("kern.osproductversion", os_version_string, &os_version_string_len, NULL, 0);
+   if (ret == 0) {
+-    int major = 10, minor = 0, patch = 0;
+-    ret = sscanf(os_version_string, "%i.%i.%i", &major, &minor, &patch);
++    unsigned int major = 10, minor = 0, patch = 0;
++    ret = sscanf(os_version_string, "%u.%u.%u", &major, &minor, &patch);
+     if (ret < 2) {
+       usbi_err (NULL, "could not determine the running OS version, assuming 10.0, kern.osproductversion=%s", os_version_string);
+-      return 100000;
++      return 10 * 10000;
+     }
+     return (major * 10000) + (minor * 100) + patch;
+   }
+@@ -386,17 +386,17 @@ uint32_t get_running_version(void) {
+   ret = sysctlbyname("kern.osrelease", os_release_string, &os_release_string_len, NULL, 0);
+   if (ret != 0) {
+     usbi_err (NULL, "could not read kern.osrelease, errno=", errno);
+-    return 100000;
++    return 10 * 10000;
+   }
+ 
+-  int darwin_major = 1, darwin_minor = 0;
+-  ret = sscanf(os_release_string, "%i.%i", &darwin_major, &darwin_minor);
++  unsigned int darwin_major = 1, darwin_minor = 0;
++  ret = sscanf(os_release_string, "%u.%u", &darwin_major, &darwin_minor);
+   if (ret < 1) {
+     usbi_err (NULL, "could not determine the running Darwin version, assuming 1.3 (OS X 10.0), kern.osrelease=%s", os_release_string);
+-    return 100000;
++    return 10 * 10000;
+   }
+ 
+-  int major = 10, minor = 0, patch = 0;
++  unsigned int major = 10, minor = 0, patch = 0;
+ 
+   if (1 == darwin_major && darwin_minor < 4) {
+     /* 10.0.x */
+@@ -1972,7 +1972,7 @@ static int darwin_clear_halt(struct libusb_device_handle *dev_handle, unsigned c
+   return darwin_to_libusb (kresult);
+ }
+ 
+-static int darwin_restore_state (struct libusb_device_handle *dev_handle, int8_t active_config,
++static int darwin_restore_state (struct libusb_device_handle *dev_handle, uint8_t active_config,
+                                  unsigned long claimed_interfaces) {
+   struct darwin_cached_device *dpriv = DARWIN_CACHED_DEVICE(dev_handle->dev);
+   struct darwin_device_handle_priv *priv = usbi_get_device_handle_priv(dev_handle);
+@@ -2037,7 +2037,7 @@ static int darwin_restore_state (struct libusb_device_handle *dev_handle, int8_t
+ static int darwin_reenumerate_device (struct libusb_device_handle *dev_handle, bool capture) {
+   struct darwin_cached_device *dpriv = DARWIN_CACHED_DEVICE(dev_handle->dev);
+   unsigned long claimed_interfaces = dev_handle->claimed_interfaces;
+-  int8_t active_config = dpriv->active_config;
++  uint8_t active_config = dpriv->active_config;
+   UInt32 options = 0;
+   IOUSBDeviceDescriptor descriptor;
+   IOUSBConfigurationDescriptorPtr cached_configuration;
+@@ -2100,8 +2100,10 @@ static int darwin_reenumerate_device (struct libusb_device_handle *dev_handle, b
+ 
+     struct timespec now;
+     usbi_get_monotonic_time(&now);
+-    unsigned long elapsed_us = (now.tv_sec - start.tv_sec) * USEC_PER_SEC +
+-                                (now.tv_nsec - start.tv_nsec) / 1000;
++    long delta_sec = now.tv_sec - start.tv_sec;
++    long delta_nsec = now.tv_nsec - start.tv_nsec;
++    unsigned long long elapsed_us = (unsigned long long)delta_sec * USEC_PER_SEC +
++                                    (unsigned long long)delta_nsec / 1000ULL;
+ 
+     if (elapsed_us >= DARWIN_REENUMERATE_TIMEOUT_US) {
+       usbi_err (ctx, "darwin/reenumerate_device: timeout waiting for reenumerate");
+@@ -2150,7 +2152,7 @@ static int darwin_reset_device (struct libusb_device_handle *dev_handle) {
+   ret = darwin_reenumerate_device (dev_handle, false);
+   if ((ret == LIBUSB_SUCCESS || ret == LIBUSB_ERROR_NOT_FOUND) && dpriv->capture_count > 0) {
+     int capture_count;
+-    int8_t active_config = dpriv->active_config;
++    uint8_t active_config = dpriv->active_config;
+     unsigned long claimed_interfaces = dev_handle->claimed_interfaces;
+ 
+     /* save old capture_count */
+diff --git a/libusb/sync.c b/libusb/sync.c
+index 146cce23c..733927d96 100644
+--- a/libusb/sync.c
++++ b/libusb/sync.c
+@@ -22,6 +22,7 @@
+ 
+ #include "libusbi.h"
+ 
++#include <assert.h>
+ #include <string.h>
+ 
+ /**
+@@ -139,7 +140,7 @@ int API_EXPORTED libusb_control_transfer(libusb_device_handle *dev_handle,
+ 
+ 	if ((bmRequestType & LIBUSB_ENDPOINT_DIR_MASK) == LIBUSB_ENDPOINT_IN)
+ 		memcpy(data, libusb_control_transfer_get_data(transfer),
+-			transfer->actual_length);
++			(size_t)transfer->actual_length);
+ 
+ 	switch (transfer->status) {
+ 	case LIBUSB_TRANSFER_COMPLETED:
+@@ -198,8 +199,10 @@ static int do_sync_bulk_transfer(struct libusb_device_handle *dev_handle,
+ 
+ 	sync_transfer_wait_for_completion(transfer);
+ 
+-	if (transferred)
++	if (transferred) {
++		assert(transfer->actual_length >= 0);
+ 		*transferred = transfer->actual_length;
++	}
+ 
+ 	switch (transfer->status) {
+ 	case LIBUSB_TRANSFER_COMPLETED:
+@@ -312,9 +315,9 @@ int API_EXPORTED libusb_bulk_transfer(libusb_device_handle *dev_handle,
+  * \param length for bulk writes, the number of bytes from data to be sent. for
+  * bulk reads, the maximum number of bytes to receive into the data buffer.
+  * \param transferred output location for the number of bytes actually
+- * transferred. Since version 1.0.21 (\ref LIBUSB_API_VERSION >= 0x01000105),
+- * it is legal to pass a NULL pointer if you do not wish to receive this
+- * information.
++ * transferred. Will never be negative. Since version 1.0.21
++ * (\ref LIBUSB_API_VERSION >= 0x01000105), it is legal to pass a NULL
++ * pointer if you do not wish to receive this information.
+  * \param timeout timeout (in milliseconds) that this function should wait
+  * before giving up due to no response being received. For an unlimited
+  * timeout, use value 0.
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index db4855535..8f1b9f081 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11888
++#define LIBUSB_NANO 11889
+diff --git a/tests/macos.c b/tests/macos.c
+index a7b1231c2..5dc3ba308 100644
+--- a/tests/macos.c
++++ b/tests/macos.c
+@@ -71,8 +71,8 @@
+ 
+ 
+ extern uint32_t libusb_testonly_fake_running_version;
+-extern int libusb_testonly_using_running_interface_version;
+-extern int libusb_testonly_using_running_device_version;
++extern uint32_t libusb_testonly_using_running_interface_version;
++extern uint32_t libusb_testonly_using_running_device_version;
+ extern bool libusb_testonly_clear_running_version_cache;
+ 
+ static libusb_testlib_result test_macos_version_fallback(void) {

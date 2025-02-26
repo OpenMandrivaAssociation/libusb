@@ -1,0 +1,125 @@
+From 9cf84577cea84b313c202a3740c3220f31e0b6b8 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Tue, 9 Apr 2024 13:34:55 -0400
+Subject: [PATCH] Avoid assignments within `if` statements
+
+Fixes all clang-tidy bugprone-assignment-in-if-condition warnings
+
+References #1479
+---
+ .clang-tidy            |  1 -
+ examples/xusb.c        | 22 ++++++++++++++--------
+ libusb/os/darwin_usb.c |  6 ++++--
+ libusb/version_nano.h  |  2 +-
+ tests/stress_mt.c      |  6 ++++--
+ 5 files changed, 23 insertions(+), 14 deletions(-)
+
+diff --git a/.clang-tidy b/.clang-tidy
+index 296498949..2cae6be42 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -2,7 +2,6 @@
+ Checks: "-*,\
+ boost-*,\
+ bugprone-*,\
+--bugprone-assignment-in-if-condition,\
+ -bugprone-branch-clone,\
+ -bugprone-easily-swappable-parameters,\
+ -bugprone-misplaced-widening-cast,\
+diff --git a/examples/xusb.c b/examples/xusb.c
+index 01bdac1a2..73e3a891d 100644
+--- a/examples/xusb.c
++++ b/examples/xusb.c
+@@ -546,11 +546,14 @@ static int test_mass_storage(libusb_device_handle *handle, uint8_t endpoint_in,
+ 		get_sense(handle, endpoint_in, endpoint_out);
+ 	} else {
+ 		display_buffer_hex(data, size);
+-		if ((binary_dump) && ((fd = fopen(binary_name, "w")) != NULL)) {
+-			if (fwrite(data, 1, (size_t)size, fd) != (unsigned int)size) {
+-				perr("   unable to write binary data\n");
++		if (binary_dump) {
++			fd = fopen(binary_name, "w");
++			if (fd != NULL) {
++				if (fwrite(data, 1, (size_t)size, fd) != (unsigned int)size) {
++					perr("   unable to write binary data\n");
++				}
++				fclose(fd);
+ 			}
+-			fclose(fd);
+ 		}
+ 	}
+ 	free(data);
+@@ -628,11 +631,14 @@ static int test_hid(libusb_device_handle *handle, uint8_t endpoint_in)
+ 		return -1;
+ 	}
+ 	display_buffer_hex(hid_report_descriptor, (unsigned int)descriptor_size);
+-	if ((binary_dump) && ((fd = fopen(binary_name, "w")) != NULL)) {
+-		if (fwrite(hid_report_descriptor, 1, (size_t)descriptor_size, fd) != (size_t)descriptor_size) {
+-			printf("   Error writing descriptor to file\n");
++	if (binary_dump) {
++		fd = fopen(binary_name, "w");
++		if (fd != NULL) {
++			if (fwrite(hid_report_descriptor, 1, (size_t)descriptor_size, fd) != (size_t)descriptor_size) {
++				printf("   Error writing descriptor to file\n");
++			}
++			fclose(fd);
+ 		}
+-		fclose(fd);
+ 	}
+ 
+ 	size = get_hid_record_size(hid_report_descriptor, descriptor_size, HID_REPORT_TYPE_FEATURE);
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index a43200042..f3e55856b 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -2701,7 +2701,8 @@ static int darwin_alloc_streams (struct libusb_device_handle *dev_handle, uint32
+ 
+   /* find the minimum number of supported streams on the endpoint list */
+   for (i = 0 ; i < num_endpoints ; ++i) {
+-    if (0 != (rc = ep_to_pipeRef (dev_handle, endpoints[i], &pipeRef, NULL, &cInterface))) {
++    rc = ep_to_pipeRef (dev_handle, endpoints[i], &pipeRef, NULL, &cInterface);
++    if (0 != rc) {
+       return rc;
+     }
+ 
+@@ -2734,7 +2735,8 @@ static int darwin_free_streams (struct libusb_device_handle *dev_handle, unsigne
+   int rc;
+ 
+   for (int i = 0 ; i < num_endpoints ; ++i) {
+-    if (0 != (rc = ep_to_pipeRef (dev_handle, endpoints[i], &pipeRef, NULL, &cInterface)))
++    rc = ep_to_pipeRef (dev_handle, endpoints[i], &pipeRef, NULL, &cInterface);
++    if (0 != rc)
+       return rc;
+ 
+     (*IOINTERFACE_V(cInterface, 550))->SupportsStreams (IOINTERFACE(cInterface), pipeRef, &supportsStreams);
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 4023331a5..2f0f3e011 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11921
++#define LIBUSB_NANO 11922
+diff --git a/tests/stress_mt.c b/tests/stress_mt.c
+index 3a8f3216b..ab0a36f69 100644
+--- a/tests/stress_mt.c
++++ b/tests/stress_mt.c
+@@ -114,7 +114,8 @@ static thread_return_t THREAD_CALL_TYPE init_and_exit(void * arg)
+ 	for (ti->iteration = 0; ti->iteration < ITERS && !ti->err; ti->iteration++) {
+ 		libusb_context *ctx = NULL;
+ 
+-		if ((ti->err = libusb_init_context(&ctx, /*options=*/NULL, /*num_options=*/0)) != 0) {
++		ti->err = libusb_init_context(&ctx, /*options=*/NULL, /*num_options=*/0);
++		if (ti->err != 0) {
+ 			break;
+ 		}
+ 		if (ti->enumerate) {
+@@ -127,7 +128,8 @@ static thread_return_t THREAD_CALL_TYPE init_and_exit(void * arg)
+ 			for (int i = 0; i < ti->devcount && ti->err == 0; i++) {
+ 				libusb_device *dev = devs[i];
+ 				struct libusb_device_descriptor desc;
+-				if ((ti->err = libusb_get_device_descriptor(dev, &desc)) != 0) {
++				ti->err = libusb_get_device_descriptor(dev, &desc);
++				if (ti->err != 0) {
+ 					break;
+ 				}
+ 				if (no_access[i]) {

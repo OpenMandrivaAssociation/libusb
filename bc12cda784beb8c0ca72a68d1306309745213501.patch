@@ -1,0 +1,49 @@
+From bc12cda784beb8c0ca72a68d1306309745213501 Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Thu, 6 Jul 2023 14:51:43 +0200
+Subject: [PATCH] netbsd: Debug print all errors
+
+Same as for OpenBSD.
+
+References #1295
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/os/netbsd_usb.c | 8 ++++----
+ libusb/version_nano.h  | 2 +-
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/libusb/os/netbsd_usb.c b/libusb/os/netbsd_usb.c
+index ebafdf0cb..a9a50b29e 100644
+--- a/libusb/os/netbsd_usb.c
++++ b/libusb/os/netbsd_usb.c
+@@ -444,6 +444,8 @@ netbsd_handle_transfer_completion(struct usbi_transfer *itransfer)
+ int
+ _errno_to_libusb(int err)
+ {
++	usbi_dbg(NULL, "error: %s (%d)", strerror(err), err);
++
+ 	switch (err) {
+ 	case EIO:
+ 		return LIBUSB_ERROR_IO;
+@@ -456,11 +458,9 @@ _errno_to_libusb(int err)
+ 	case EWOULDBLOCK:
+ 	case ETIMEDOUT:
+ 		return LIBUSB_ERROR_TIMEOUT;
++	default:
++		return LIBUSB_ERROR_OTHER;
+ 	}
+-
+-	usbi_dbg(NULL, "error: %s (%d)", strerror(err), err);
+-
+-	return LIBUSB_ERROR_OTHER;
+ }
+ 
+ int
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 7e344ea32..4b316c172 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11929
++#define LIBUSB_NANO 11930

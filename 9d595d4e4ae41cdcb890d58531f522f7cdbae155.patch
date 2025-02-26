@@ -1,0 +1,141 @@
+From 9d595d4e4ae41cdcb890d58531f522f7cdbae155 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Mon, 1 Jan 2024 17:20:35 -0500
+Subject: [PATCH] Replace atoi() with strtol() which allows error checking
+
+atoi() gives no opportunity for error checking, strtol() does. Improved
+error checking.
+
+Closes #1422
+---
+ libusb/core.c              | 13 +++++++++----
+ libusb/os/linux_usbfs.c    | 15 ++++++++++++---
+ libusb/os/windows_winusb.c | 18 ++++++++++++++++--
+ libusb/version_nano.h      |  2 +-
+ 4 files changed, 38 insertions(+), 10 deletions(-)
+
+diff --git a/libusb/core.c b/libusb/core.c
+index 74617373d..676c397ec 100644
+--- a/libusb/core.c
++++ b/libusb/core.c
+@@ -2380,14 +2380,19 @@ int API_EXPORTEDV libusb_set_option(libusb_context *ctx,
+  */
+ static enum libusb_log_level get_env_debug_level(void)
+ {
++	enum libusb_log_level level = LIBUSB_LOG_LEVEL_NONE;
+ 	const char *dbg = getenv("LIBUSB_DEBUG");
+-	enum libusb_log_level level;
+ 	if (dbg) {
+-		int dbg_level = atoi(dbg);
++		char *end = NULL;
++		long dbg_level = strtol(dbg, &end, 10);
++		if (dbg == end ||
++			*end != '\0' ||
++			dbg_level < LIBUSB_LOG_LEVEL_NONE ||
++			dbg_level > LIBUSB_LOG_LEVEL_DEBUG) {
++			usbi_warn(NULL, "LIBUSB_DEBUG is invalid or out of range; clamping");
++		}
+ 		dbg_level = CLAMP(dbg_level, LIBUSB_LOG_LEVEL_NONE, LIBUSB_LOG_LEVEL_DEBUG);
+ 		level = (enum libusb_log_level)dbg_level;
+-	} else {
+-		level = LIBUSB_LOG_LEVEL_NONE;
+ 	}
+ 	return level;
+ }
+diff --git a/libusb/os/linux_usbfs.c b/libusb/os/linux_usbfs.c
+index 8c7b3a9d8..049d56573 100644
+--- a/libusb/os/linux_usbfs.c
++++ b/libusb/os/linux_usbfs.c
+@@ -541,7 +541,7 @@ static int read_sysfs_attr(struct libusb_context *ctx,
+ 
+ 	errno = 0;
+ 	value = strtol(buf, &endptr, 10);
+-	if (value < 0 || value > (long)max_value || errno) {
++	if (buf == endptr || value < 0 || value > (long)max_value || errno) {
+ 		usbi_err(ctx, "attribute %s contains an invalid value: '%s'", attr, buf);
+ 		return LIBUSB_ERROR_INVALID_PARAM;
+ 	} else if (*endptr != '\0') {
+@@ -1033,7 +1033,7 @@ static int linux_get_parent_info(struct libusb_device *dev, const char *sysfs_di
+ {
+ 	struct libusb_context *ctx = DEVICE_CTX(dev);
+ 	struct libusb_device *it;
+-	char *parent_sysfs_dir, *tmp;
++	char *parent_sysfs_dir, *tmp, *end;
+ 	int ret, add_parent = 1;
+ 
+ 	/* XXX -- can we figure out the topology when using usbfs? */
+@@ -1048,7 +1048,16 @@ static int linux_get_parent_info(struct libusb_device *dev, const char *sysfs_di
+ 
+ 	if ((tmp = strrchr(parent_sysfs_dir, '.')) ||
+ 	    (tmp = strrchr(parent_sysfs_dir, '-'))) {
+-	        dev->port_number = atoi(tmp + 1);
++		const char *start = tmp + 1;
++		long port_number = strtol(start, &end, 10);
++		if (port_number < 0 || port_number > INT_MAX || start == end || '\0' != *end) {
++			usbi_warn(ctx, "Can not parse sysfs_dir: %s, unexpected parent info",
++				parent_sysfs_dir);
++			free(parent_sysfs_dir);
++			return LIBUSB_ERROR_OTHER;
++		} else {
++			dev->port_number = (int)port_number;
++		}
+ 		*tmp = '\0';
+ 	} else {
+ 		usbi_warn(ctx, "Can not parse sysfs_dir: %s, no parent info",
+diff --git a/libusb/os/windows_winusb.c b/libusb/os/windows_winusb.c
+index a30f3def9..5bfcb2b02 100644
+--- a/libusb/os/windows_winusb.c
++++ b/libusb/os/windows_winusb.c
+@@ -29,6 +29,7 @@
+ #include <setupapi.h>
+ #include <ctype.h>
+ #include <stdio.h>
++#include <stdlib.h>
+ 
+ #include "libusbi.h"
+ #include "windows_winusb.h"
+@@ -1229,6 +1230,9 @@ static bool get_dev_port_number(HDEVINFO dev_info, SP_DEVINFO_DATA *dev_info_dat
+ {
+ 	char buffer[MAX_KEY_LENGTH];
+ 	DWORD size;
++	const char *start = NULL;
++	char *end = NULL;
++	long long port;
+ 
+ 	// First try SPDRP_LOCATION_INFORMATION, which returns a REG_SZ. The string *may* have a format
+ 	// similar to "Port_#0002.Hub_#000D", in which case we can extract the port number. However, we
+@@ -1237,7 +1241,12 @@ static bool get_dev_port_number(HDEVINFO dev_info, SP_DEVINFO_DATA *dev_info_dat
+ 			NULL, (PBYTE)buffer, sizeof(buffer), NULL)) {
+ 		// Check for the required format.
+ 		if (strncmp(buffer, "Port_#", 6) == 0) {
+-			*port_nr = atoi(buffer + 6);
++			start = buffer + 6;
++			port = strtoll(start, &end, 10);
++			if (port < 0 || port > ULONG_MAX || end == start || *end != '\0') {
++				return false;
++			}
++			*port_nr = (DWORD)port;
+ 			return true;
+ 		}
+ 	}
+@@ -1251,7 +1260,12 @@ static bool get_dev_port_number(HDEVINFO dev_info, SP_DEVINFO_DATA *dev_info_dat
+ 		// Find the last "#USB(x)" substring
+ 		for (char *token = strrchr(buffer, '#'); token != NULL; token = strrchr(buffer, '#')) {
+ 			if (strncmp(token, "#USB(", 5) == 0) {
+-				*port_nr = atoi(token + 5);
++				start = token + 5;
++				port = strtoll(start, &end, 10);
++				if (port < 0 || port > ULONG_MAX || end == start || *end != '\0') {
++					return false;
++				}
++				*port_nr = (DWORD)port;
+ 				return true;
+ 			}
+ 			// Shorten the string and try again.
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 645686061..7e344ea32 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11928
++#define LIBUSB_NANO 11929

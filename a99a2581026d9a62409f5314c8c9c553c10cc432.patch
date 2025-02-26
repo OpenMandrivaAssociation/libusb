@@ -1,0 +1,144 @@
+From a99a2581026d9a62409f5314c8c9c553c10cc432 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Mon, 1 Jan 2024 23:01:40 -0500
+Subject: [PATCH] Increase usbi_get_tid() size from int to long
+
+This function has different implementations on every OS, but for some,
+like macOS, it was truncating from 64 to 32 bit by casting to int. So
+increase its size from int to long.
+
+(The function is currently only used for debug output.)
+
+Closes #1423
+---
+ libusb/core.c               |  2 +-
+ libusb/os/threads_posix.c   | 33 +++++++++++++++++----------------
+ libusb/os/threads_posix.h   |  2 +-
+ libusb/os/threads_windows.h |  4 ++--
+ libusb/version_nano.h       |  2 +-
+ 5 files changed, 22 insertions(+), 21 deletions(-)
+
+diff --git a/libusb/core.c b/libusb/core.c
+index bdfc77cf7..010201c5f 100644
+--- a/libusb/core.c
++++ b/libusb/core.c
+@@ -2809,7 +2809,7 @@ static void log_v(struct libusb_context *ctx, enum libusb_log_level level,
+ 		TIMESPEC_SUB(&timestamp, &timestamp_origin, &timestamp);
+ 
+ 		header_len = snprintf(buf, sizeof(buf),
+-			"[%2ld.%06ld] [%08x] libusb: %s [%s] ",
++			"[%2ld.%06ld] [%08lx] libusb: %s [%s] ",
+ 			(long)timestamp.tv_sec, (long)(timestamp.tv_nsec / 1000L), usbi_get_tid(), prefix, function);
+ 	} else {
+ 		header_len = snprintf(buf, sizeof(buf),
+diff --git a/libusb/os/threads_posix.c b/libusb/os/threads_posix.c
+index 0079fd598..2e6d942b5 100644
+--- a/libusb/os/threads_posix.c
++++ b/libusb/os/threads_posix.c
+@@ -22,6 +22,7 @@
+ #include "libusbi.h"
+ 
+ #include <errno.h>
++#include <limits.h>
+ #if defined(__ANDROID__)
+ # include <unistd.h>
+ #elif defined(__HAIKU__)
+@@ -79,47 +80,47 @@ int usbi_cond_timedwait(pthread_cond_t *cond,
+ 		return LIBUSB_ERROR_OTHER;
+ }
+ 
+-unsigned int usbi_get_tid(void)
++unsigned long usbi_get_tid(void)
+ {
+-	static _Thread_local unsigned int tl_tid;
+-	int tid;
++	static _Thread_local unsigned long tl_tid;
++	unsigned long tid;
+ 
+ 	if (tl_tid)
+ 		return tl_tid;
+ 
+ #if defined(__ANDROID__)
+-	tid = gettid();
++	tid = (unsigned long)gettid();
+ #elif defined(__APPLE__)
+ #ifdef HAVE_PTHREAD_THREADID_NP
+ 	uint64_t thread_id;
+ 
+ 	if (pthread_threadid_np(NULL, &thread_id) == 0)
+-		tid = (int)thread_id;
++		tid = (unsigned long)thread_id;
+ 	else
+-		tid = -1;
++		tid = ULONG_MAX;
+ #else
+-	tid = (int)pthread_mach_thread_np(pthread_self());
++	tid = (unsigned long)pthread_mach_thread_np(pthread_self());
+ #endif
+ #elif defined(__HAIKU__)
+-	tid = get_pthread_thread_id(pthread_self());
++	tid = (unsigned long)get_pthread_thread_id(pthread_self());
+ #elif defined(__linux__)
+-	tid = (int)syscall(SYS_gettid);
++	tid = (unsigned long)syscall(SYS_gettid);
+ #elif defined(__NetBSD__)
+-	tid = _lwp_self();
++	tid = (unsigned long)_lwp_self();
+ #elif defined(__OpenBSD__)
+-	tid = getthrid();
++	tid = (unsigned long)getthrid();
+ #elif defined(__sun__)
+-	tid = _lwp_self();
++	tid = (unsigned long)_lwp_self();
+ #else
+-	tid = -1;
++	tid = ULONG_MAX;
+ #endif
+ 
+-	if (tid == -1) {
++	if (tid == ULONG_MAX) {
+ 		/* If we don't have a thread ID, at least return a unique
+ 		 * value that can be used to distinguish individual
+ 		 * threads. */
+-		tid = (int)(intptr_t)pthread_self();
++		tid = (unsigned long)(uintptr_t)pthread_self();
+ 	}
+ 
+-	return tl_tid = (unsigned int)tid;
++	return tl_tid = tid;
+ }
+diff --git a/libusb/os/threads_posix.h b/libusb/os/threads_posix.h
+index 932283402..e6096edd0 100644
+--- a/libusb/os/threads_posix.h
++++ b/libusb/os/threads_posix.h
+@@ -93,6 +93,6 @@ static inline void usbi_tls_key_delete(usbi_tls_key_t key)
+ 	PTHREAD_CHECK(pthread_key_delete(key));
+ }
+ 
+-unsigned int usbi_get_tid(void);
++unsigned long usbi_get_tid(void);
+ 
+ #endif /* LIBUSB_THREADS_POSIX_H */
+diff --git a/libusb/os/threads_windows.h b/libusb/os/threads_windows.h
+index dfef15882..8c9cfb45d 100644
+--- a/libusb/os/threads_windows.h
++++ b/libusb/os/threads_windows.h
+@@ -105,9 +105,9 @@ static inline void usbi_tls_key_delete(usbi_tls_key_t key)
+ 	WINAPI_CHECK(TlsFree(key));
+ }
+ 
+-static inline unsigned int usbi_get_tid(void)
++static inline unsigned long usbi_get_tid(void)
+ {
+-	return (unsigned int)GetCurrentThreadId();
++	return (unsigned long)GetCurrentThreadId();
+ }
+ 
+ #endif /* LIBUSB_THREADS_WINDOWS_H */
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 3673ed7dd..7938a7ec0 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11894
++#define LIBUSB_NANO 11895

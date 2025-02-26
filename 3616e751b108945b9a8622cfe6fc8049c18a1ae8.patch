@@ -1,0 +1,54 @@
+From 3616e751b108945b9a8622cfe6fc8049c18a1ae8 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Tue, 9 Apr 2024 13:41:06 -0400
+Subject: [PATCH] examples/xusb: Match size of loop index to what is iterated
+
+Fixes all clang-tidy bugprone-too-small-loop-variable warnings
+
+References #1479
+---
+ .clang-tidy           | 1 -
+ examples/xusb.c       | 4 ++--
+ libusb/version_nano.h | 2 +-
+ 3 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/.clang-tidy b/.clang-tidy
+index 4e4e3b32b..32028c75e 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -11,7 +11,6 @@ bugprone-*,\
+ -bugprone-signed-char-misuse,\
+ -bugprone-suspicious-string-compare,\
+ -bugprone-switch-missing-default-case,\
+--bugprone-too-small-loop-variable,\
+ clang-analyzer-*,\
+ -clang-analyzer-core.NullDereference,\
+ -clang-analyzer-deadcode.DeadStores,\
+diff --git a/examples/xusb.c b/examples/xusb.c
+index ce44212d0..01bdac1a2 100644
+--- a/examples/xusb.c
++++ b/examples/xusb.c
+@@ -561,14 +561,14 @@ static int test_mass_storage(libusb_device_handle *handle, uint8_t endpoint_in,
+ // HID
+ static int get_hid_record_size(const uint8_t *hid_report_descriptor, int size, int type)
+ {
+-	uint8_t i, j = 0;
++	uint8_t j = 0;
+ 	uint8_t offset;
+ 	int record_size[3] = {0, 0, 0};
+ 	unsigned int nb_bits = 0, nb_items = 0;
+ 	bool found_record_marker;
+ 
+ 	found_record_marker = false;
+-	for (i = hid_report_descriptor[0]+1; i < size; i += offset) {
++	for (int i = hid_report_descriptor[0]+1; i < size; i += offset) {
+ 		offset = (hid_report_descriptor[i]&0x03) + 1;
+ 		if (offset == 4)
+ 			offset = 5;
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index f08f1bf78..b4c4f629d 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11917
++#define LIBUSB_NANO 11918

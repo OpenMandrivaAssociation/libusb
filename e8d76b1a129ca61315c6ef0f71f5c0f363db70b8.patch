@@ -1,0 +1,33 @@
+From e8d76b1a129ca61315c6ef0f71f5c0f363db70b8 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Tue, 9 Apr 2024 13:31:45 -0400
+Subject: [PATCH] clang-tidy: Stop suppressing
+ readability-misleading-indentation warnings
+
+All such warnings are already fixed in master.
+
+Closes #1479
+---
+ .clang-tidy           | 1 -
+ libusb/version_nano.h | 2 +-
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/.clang-tidy b/.clang-tidy
+index 47763a90a..1f59ae936 100644
+--- a/.clang-tidy
++++ b/.clang-tidy
+@@ -29,7 +29,6 @@ readability-*,\
+ -readability-function-cognitive-complexity,\
+ -readability-isolate-declaration,\
+ -readability-magic-numbers,\
+--readability-misleading-indentation,\
+ "
+ #WarningsAsErrors: "*"
+ ...
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 7b4ce6b6e..2dc310a08 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11925
++#define LIBUSB_NANO 11926

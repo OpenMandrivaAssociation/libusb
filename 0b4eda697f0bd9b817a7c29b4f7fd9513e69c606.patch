@@ -1,0 +1,48 @@
+From 0b4eda697f0bd9b817a7c29b4f7fd9513e69c606 Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Sun, 11 Aug 2024 13:04:44 +0200
+Subject: [PATCH] docs: Hide internal descriptor.c structure from doxygen
+
+Follow-up of commit f00f06e9
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/descriptor.c   | 10 +++++++---
+ libusb/version_nano.h |  2 +-
+ 2 files changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/libusb/descriptor.c b/libusb/descriptor.c
+index 790f9ff71..9b33b6b44 100644
+--- a/libusb/descriptor.c
++++ b/libusb/descriptor.c
+@@ -1005,9 +1005,12 @@ int API_EXPORTED libusb_get_ss_usb_device_capability_descriptor(
+ 	return LIBUSB_SUCCESS;
+ }
+ 
+-/* We use this private struct only to parse a SuperSpeedPlus device capability
+-   descriptor according to section 9.6.2.5 of the USB 3.1 specification.
+-   We don't expose it. */
++/// @cond DEV
++/** \internal \ingroup libusb_desc
++ * We use this private struct only to parse a SuperSpeedPlus device capability
++ * descriptor according to section 9.6.2.5 of the USB 3.1 specification.
++ * We don't expose it.
++ */
+ struct internal_ssplus_capability_descriptor {
+ 	/** The length of the descriptor. Must be equal to LIBUSB_BT_SSPLUS_USB_DEVICE_CAPABILITY_SIZE */
+ 	uint8_t  bLength;
+@@ -1030,6 +1033,7 @@ struct internal_ssplus_capability_descriptor {
+ 	/** Unused */
+ 	uint16_t wReserved;
+ };
++/// @endcond
+ 
+ int API_EXPORTED libusb_get_ssplus_usb_device_capability_descriptor(
+ 	libusb_context *ctx,
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index b3a364262..71d829681 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11937
++#define LIBUSB_NANO 11938

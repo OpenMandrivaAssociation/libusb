@@ -1,0 +1,38 @@
+From d04fc0e60bbca237876ab80530b6e5bae9b73ebd Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Thu, 6 Jul 2023 14:56:45 +0200
+Subject: [PATCH] openbsd: Use default clause in _errno_to_libusb()
+
+Same as for NetBSD.
+
+Closes #1295
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/os/openbsd_usb.c | 4 ++--
+ libusb/version_nano.h   | 2 +-
+ 2 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/libusb/os/openbsd_usb.c b/libusb/os/openbsd_usb.c
+index 2a85d1f9b..13bda3006 100644
+--- a/libusb/os/openbsd_usb.c
++++ b/libusb/os/openbsd_usb.c
+@@ -495,9 +495,9 @@ _errno_to_libusb(int err)
+ 		return LIBUSB_ERROR_NO_MEM;
+ 	case ETIMEDOUT:
+ 		return LIBUSB_ERROR_TIMEOUT;
++	default:
++		return LIBUSB_ERROR_OTHER;
+ 	}
+-
+-	return LIBUSB_ERROR_OTHER;
+ }
+ 
+ int
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 4b316c172..ad5d874da 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11930
++#define LIBUSB_NANO 11931

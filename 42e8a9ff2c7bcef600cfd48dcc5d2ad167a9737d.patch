@@ -1,0 +1,38 @@
+From 42e8a9ff2c7bcef600cfd48dcc5d2ad167a9737d Mon Sep 17 00:00:00 2001
+From: Tormod Volden <debian.tormod@gmail.com>
+Date: Sun, 12 May 2024 18:35:12 +0200
+Subject: [PATCH] linux: ioctl() request number is unsigned long
+
+The type mismatch was caught by building with -Wconversion.
+
+References #1497
+
+Signed-off-by: Tormod Volden <debian.tormod@gmail.com>
+---
+ libusb/os/linux_usbfs.c | 5 +++--
+ libusb/version_nano.h   | 2 +-
+ 2 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/libusb/os/linux_usbfs.c b/libusb/os/linux_usbfs.c
+index 555607eac..8c7b3a9d8 100644
+--- a/libusb/os/linux_usbfs.c
++++ b/libusb/os/linux_usbfs.c
+@@ -1628,8 +1628,9 @@ static int op_reset_device(struct libusb_device_handle *handle)
+ 	return ret;
+ }
+ 
+-static int do_streams_ioctl(struct libusb_device_handle *handle, long req,
+-	uint32_t num_streams, unsigned char *endpoints, int num_endpoints)
++static int do_streams_ioctl(struct libusb_device_handle *handle,
++	unsigned long req, uint32_t num_streams, unsigned char *endpoints,
++	int num_endpoints)
+ {
+ 	struct linux_device_handle_priv *hpriv = usbi_get_device_handle_priv(handle);
+ 	int r, fd = hpriv->fd;
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 8fd5c667f..2960c6d43 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11901
++#define LIBUSB_NANO 11902

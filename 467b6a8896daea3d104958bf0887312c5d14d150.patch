@@ -1,0 +1,58 @@
+From 467b6a8896daea3d104958bf0887312c5d14d150 Mon Sep 17 00:00:00 2001
+From: Matthijs Lavrijsen <mattiwatti@gmail.com>
+Date: Tue, 30 Jul 2024 07:39:55 +0200
+Subject: [PATCH] winusb: Fix winusb_get_device_list() failing to find port
+ numbers
+
+Fix recent regression introduced in commit 9d595d4.
+
+get_dev_port_number() was always returning port number 0 for any port,
+due to the incorrect assumption that strtoll's 'end' pointer will point
+to a null terminator on success. This was causing
+winusb_get_device_list() to always fail. Since we actually know the
+expected values of *end for both the SPDRP_LOCATION_INFORMATION and the
+SPDRP_LOCATION_PATHS case, check for those instead.
+
+Additionally, document why a return value of 0 is treated as a failure
+in this particular function, for valid but somewhat coincidental reasons
+that may not be immediately obvious.
+
+Closes #1544
+---
+ libusb/os/windows_winusb.c | 7 +++++--
+ libusb/version_nano.h      | 2 +-
+ 2 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/libusb/os/windows_winusb.c b/libusb/os/windows_winusb.c
+index dd4675b57..c77bd2094 100644
+--- a/libusb/os/windows_winusb.c
++++ b/libusb/os/windows_winusb.c
+@@ -1242,8 +1242,11 @@ static bool get_dev_port_number(HDEVINFO dev_info, SP_DEVINFO_DATA *dev_info_dat
+ 		// Check for the required format.
+ 		if (strncmp(buffer, "Port_#", 6) == 0) {
+ 			start = buffer + 6;
++			// Note that 0 is both strtoll's sentinel return value to indicate failure, as well
++			// as (obviously) the return value for the literal "0". Fortunately we can always treat
++			// 0 as a failure, since Windows USB port numbers are numbered 1..n.
+ 			port = strtoll(start, &end, 10);
+-			if (port < 0 || port > ULONG_MAX || end == start || *end != '\0') {
++			if (port <= 0 || port >= ULONG_MAX || end == start || (*end != '.' && *end != '\0')) {
+ 				return false;
+ 			}
+ 			*port_nr = (DWORD)port;
+@@ -1262,7 +1265,7 @@ static bool get_dev_port_number(HDEVINFO dev_info, SP_DEVINFO_DATA *dev_info_dat
+ 			if (strncmp(token, "#USB(", 5) == 0) {
+ 				start = token + 5;
+ 				port = strtoll(start, &end, 10);
+-				if (port < 0 || port > ULONG_MAX || end == start || *end != '\0') {
++				if (port <= 0 || port >= ULONG_MAX || end == start || (*end != ')' && *end != '\0')) {
+ 					return false;
+ 				}
+ 				*port_nr = (DWORD)port;
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index d7d1a9711..600fb93e5 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11935
++#define LIBUSB_NANO 11936

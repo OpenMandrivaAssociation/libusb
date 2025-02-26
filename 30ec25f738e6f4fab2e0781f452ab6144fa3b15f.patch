@@ -1,0 +1,37 @@
+From 30ec25f738e6f4fab2e0781f452ab6144fa3b15f Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Mon, 29 Jul 2024 10:48:44 -0400
+Subject: [PATCH] examples/ezusb: Fix error checking regression in recent
+ commit
+
+Commit 00454ab0 accidently botched error checking when replacing
+rewind() with fseek().
+
+Thanks to GitHub user "anotheruserofgithub" for noticing.
+
+Closes #1539
+---
+ examples/ezusb.c      | 2 +-
+ libusb/version_nano.h | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/examples/ezusb.c b/examples/ezusb.c
+index 242968fcb..75cdd4fb8 100644
+--- a/examples/ezusb.c
++++ b/examples/ezusb.c
+@@ -816,7 +816,7 @@ int ezusb_load_ram(libusb_device_handle *device, const char *path, int fx_type,
+ 
+ 		/* at least write the interrupt vectors (at 0x0000) for reset! */
+ 		status = fseek(image, 0L, SEEK_SET);
+-		if (ret < 0) {
++		if (status < 0) {
+ 			logerror("unable to rewind file %s\n", path);
+ 			ret = status;
+ 			goto exit;
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index c3f29dd74..1c0cec5de 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11932
++#define LIBUSB_NANO 11933

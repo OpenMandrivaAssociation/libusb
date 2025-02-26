@@ -1,0 +1,45 @@
+From d81e80aa5a45c6d24eb1b2556e089c2f21194581 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Sat, 30 Dec 2023 22:13:09 -0500
+Subject: [PATCH] darwin: Correct interpretation of COM-style Release() return
+ value
+
+Found thanks to a warning about implicit sign conversion.
+
+The return value is the new reference count, not an IOReturn error code.
+
+I'm not sure if this is copy paste, and the new ref count is
+unimportant, so I just preserved the existing behaviour (but adjusted
+the log message). The change only impacts debug logs anyway.
+
+References #1414
+---
+ libusb/os/darwin_usb.c | 7 ++++---
+ libusb/version_nano.h  | 2 +-
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index 98d96dcff..106ec875f 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -1868,9 +1868,10 @@ static int darwin_release_interface(struct libusb_device_handle *dev_handle, uin
+   if (kresult != kIOReturnSuccess)
+     usbi_warn (HANDLE_CTX (dev_handle), "USBInterfaceClose: %s", darwin_error_str(kresult));
+ 
+-  kresult = (*IOINTERFACE(cInterface))->Release(IOINTERFACE(cInterface));
+-  if (kresult != kIOReturnSuccess)
+-    usbi_warn (HANDLE_CTX (dev_handle), "Release: %s", darwin_error_str(kresult));
++  ULONG refCount = (*IOINTERFACE(cInterface))->Release(IOINTERFACE(cInterface));
++  if (refCount != 0) {
++    usbi_warn (HANDLE_CTX (dev_handle), "Release final refCount: %u", refCount);
++  }
+ 
+   IOINTERFACE(cInterface) = NULL;
+ 
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index 8f1b9f081..677ea883d 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11889
++#define LIBUSB_NANO 11890

@@ -1,0 +1,50 @@
+From 1c1bad9d128052fa82ba2c648875276f0189c3a2 Mon Sep 17 00:00:00 2001
+From: Sean McBride <sean@rogue-research.com>
+Date: Mon, 1 Jan 2024 23:37:15 -0500
+Subject: [PATCH] darwin: Fix clang static analyzer warning about a variable
+ that's never read
+
+Reformulate the loop in a way that the variable is read.
+
+References #1414
+---
+ libusb/os/darwin_usb.c | 13 +++++++------
+ libusb/version_nano.h  |  2 +-
+ 2 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/libusb/os/darwin_usb.c b/libusb/os/darwin_usb.c
+index 106ec875f..c129cf5b4 100644
+--- a/libusb/os/darwin_usb.c
++++ b/libusb/os/darwin_usb.c
+@@ -1242,17 +1242,18 @@ static bool get_device_port (io_service_t service, UInt8 *port) {
+ 
+ /* Returns 1 on success, 0 on failure. */
+ static bool get_device_parent_sessionID(io_service_t service, UInt64 *parent_sessionID) {
+-  IOReturn kresult;
+-  io_service_t parent;
+-
+   /* Walk up the tree in the IOService plane until we find a parent that has a sessionID */
+-  parent = service;
+-  while((kresult = IORegistryEntryGetParentEntry (parent, kIOUSBPlane, &parent)) == kIOReturnSuccess) {
++  io_service_t parent = service;
++  do {
++    IOReturn kresult = IORegistryEntryGetParentEntry (parent, kIOUSBPlane, &parent);
++    if (kresult != kIOReturnSuccess) {
++        break;
++    }
+     if (get_ioregistry_value_number (parent, CFSTR("sessionID"), kCFNumberSInt64Type, parent_sessionID)) {
+         /* Success */
+         return true;
+     }
+-  }
++  } while (true);
+ 
+   /* We ran out of parents */
+   return false;
+diff --git a/libusb/version_nano.h b/libusb/version_nano.h
+index d02e6d4f2..daf8db4fe 100644
+--- a/libusb/version_nano.h
++++ b/libusb/version_nano.h
+@@ -1 +1 @@
+-#define LIBUSB_NANO 11891
++#define LIBUSB_NANO 11892
