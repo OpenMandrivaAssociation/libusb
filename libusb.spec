@@ -21,6 +21,11 @@ Group:		System/Libraries
 Url:		https://libusb.info
 Source0:	https://github.com/libusb/libusb/releases/download/v%{version}/%{name}-%{version}.tar.bz2
 
+BuildRequires:	autoconf
+BuildRequires:	automake
+BuildRequires:	libtool-base
+BuildRequires:	slibtool
+BuildRequires:	make
 BuildRequires:	doxygen
 BuildRequires:	locales-extra-charsets
 BuildRequires:	pkgconfig(udev)
