@@ -3,50 +3,12 @@ From: Sean McBride <sean@rogue-research.com>
 Date: Mon, 29 Jul 2024 10:55:01 -0400
 Subject: [PATCH] descriptor: Fix clang -Wimplicit-int-conversion warnings
 
-For the 16-bit case especially, the result of the `or` is implicitly
-promoted to `int`, then when returned was warning:
+NOTE: This change is already present in libusb 1.0.30. The patch body is a
+no-op so the packaging series continues to apply cleanly after the version bump.
 
-warning: implicit conversion loses integer precision: 'int' to 'uint16_t' (aka 'unsigned short') [-Wimplicit-int-conversion]
-
-Add more casts to shut it up.
-
-Closes #1541
----
- libusb/descriptor.c   | 12 ++++++------
- libusb/version_nano.h |  2 +-
- 2 files changed, 7 insertions(+), 7 deletions(-)
-
-diff --git a/libusb/descriptor.c b/libusb/descriptor.c
-index 597868cd7..2ab1d47b1 100644
---- a/libusb/descriptor.c
-+++ b/libusb/descriptor.c
-@@ -32,16 +32,16 @@
- 
- static inline uint16_t ReadLittleEndian16(const uint8_t p[2])
- {
--	return (uint16_t)p[1] << 8 |
--	       (uint16_t)p[0];
-+	return (uint16_t)((uint16_t)p[1] << 8 |
-+			  (uint16_t)p[0]);
- }
- 
- static inline uint32_t ReadLittleEndian32(const uint8_t p[4])
- {
--	return (uint32_t)p[3] << 24 |
--	       (uint32_t)p[2] << 16 |
--	       (uint32_t)p[1] << 8 |
--	       (uint32_t)p[0];
-+	return (uint32_t)((uint32_t)p[3] << 24 |
-+			  (uint32_t)p[2] << 16 |
-+			  (uint32_t)p[1] << 8 |
-+			  (uint32_t)p[0]);
- }
- 
- static void clear_endpoint(struct libusb_endpoint_descriptor *endpoint)
-diff --git a/libusb/version_nano.h b/libusb/version_nano.h
-index 1e8ece942..d7d1a9711 100644
---- a/libusb/version_nano.h
-+++ b/libusb/version_nano.h
+diff --git a/AUTHORS b/AUTHORS
+--- a/AUTHORS
++++ b/AUTHORS
 @@ -1 +1 @@
--#define LIBUSB_NANO 11934
-+#define LIBUSB_NANO 11935
+-Copyright © 2001 Johannes Erdfelt <johannes@erdfelt.com>
++Copyright © 2001 Johannes Erdfelt <johannes@erdfelt.com>

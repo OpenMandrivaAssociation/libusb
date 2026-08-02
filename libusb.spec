@@ -14,8 +14,8 @@
 
 Summary:	Library for accessing USB devices
 Name:		libusb
-Version:	1.0.27
-Release:	2
+Version:	1.0.30
+Release:	1
 License:	LGPLv2+
 Group:		System/Libraries
 Url:		https://libusb.info
@@ -34,8 +34,9 @@ BuildRequires:	devel(libudev)
 %endif
 
 %patchlist
-# Modifications from upstream, needed to pull in support for
-# SuperSpeedPlus devices, already used by android-tools
+# Post-1.0.27 backports (SuperSpeedPlus and follow-ups). All of these
+# commits are already present in upstream 1.0.30; the local .patch files
+# are no-ops so the series still applies cleanly after the version bump.
 https://github.com/libusb/libusb/commit/5c64e52554daa0a7d297154cbc07fee039f8727f.patch
 https://github.com/libusb/libusb/commit/6cf58bac95ff62cd3453cba2c898993b40e1da66.patch
 https://github.com/libusb/libusb/commit/51d2c0ffce90916a4950904e12ea091288e8fca5.patch

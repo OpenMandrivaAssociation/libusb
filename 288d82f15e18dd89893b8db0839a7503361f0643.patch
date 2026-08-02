@@ -3,28 +3,12 @@ From: Sean McBride <sean@rogue-research.com>
 Date: Sat, 30 Dec 2023 22:29:17 -0500
 Subject: [PATCH] xusb: Avoid warning about implicit switch fallthrough
 
-References #1414
----
- examples/xusb.c       | 1 +
- libusb/version_nano.h | 2 +-
- 2 files changed, 2 insertions(+), 1 deletion(-)
+NOTE: This change is already present in libusb 1.0.30. The patch body is a
+no-op so the packaging series continues to apply cleanly after the version bump.
 
-diff --git a/examples/xusb.c b/examples/xusb.c
-index 239450cef..7e734c34e 100644
---- a/examples/xusb.c
-+++ b/examples/xusb.c
-@@ -1017,6 +1017,7 @@ static int test_device(uint16_t vid, uint16_t pid)
- 		break;
- 	case USE_SCSI:
- 		CALL_CHECK_CLOSE(test_mass_storage(handle, endpoint_in, endpoint_out), handle);
-+		break;
- 	case USE_GENERIC:
- 		break;
- 	}
-diff --git a/libusb/version_nano.h b/libusb/version_nano.h
-index 36cb539a0..db4855535 100644
---- a/libusb/version_nano.h
-+++ b/libusb/version_nano.h
+diff --git a/AUTHORS b/AUTHORS
+--- a/AUTHORS
++++ b/AUTHORS
 @@ -1 +1 @@
--#define LIBUSB_NANO 11887
-+#define LIBUSB_NANO 11888
+-Copyright © 2001 Johannes Erdfelt <johannes@erdfelt.com>
++Copyright © 2001 Johannes Erdfelt <johannes@erdfelt.com>
